@@ -3,15 +3,22 @@ Diver.Game = {
     , canvasId: 'canvas'
     , stars: null
     , bottomHeight: 40
+    , ship: null
     , init: function(){
         this.stars = [];
+    }
+    , start: function(){
         this.canvas = new Diver.Canvas({
             id: this.canvasId
             , interval: 50
         });
-    }
-    , start: function(){
         this.canvas.on('click', this.addStarAt, this);
+        this.ship = new Diver.Ship({
+            x: 50
+            , y: 100
+            , fullSrc: 'res/img/ship-load.png'
+        });
+        this.ship.setLoaded(true);
         this.canvas.play();
     }
     , addStarAt: function(x, y){
@@ -24,8 +31,13 @@ Diver.Game = {
         });
         
         this.stars.push(star);
-        this.canvas.add(star, 0);
+        this.addDrawElement(star);
+    }
+    , addDrawObject: function(obj){
+        this.canvas.add(obj);
     }
 };
 
 Diver.Game = Diver.extend(Diver.Base, Diver.Game);
+
+Diver.Game = new Diver.Game();

@@ -1,9 +1,11 @@
 Diver = {};
 
-Diver.apply = function(a, b){
+Diver.apply = function(a, b, onlyNew){
     if (a && b && typeof b == 'object'){
         for (var p in b){
-            a[p] = b[p];
+            if (!onlyNew || a[p] == undefined){
+                a[p] = b[p];
+            }
         }
     }
     return a;
@@ -55,6 +57,11 @@ Diver.apply = function(a, b){
 })();
 
 Diver.Base = function(config){
+    if (config && config.mixins){
+        for (var i = 0; i < config.mixins.length; i++){
+            Diver.apply(this, config.mixins[i]);
+        }
+    }
     Diver.apply(this, config);
     this.init();
 };
@@ -77,8 +84,11 @@ Diver.Base.prototype = {
 Diver.mixins = {};
 
 Diver.mixins.Observable = {
-    observers: {}
+    observers: null
     , isObservable: true
+    , initMixin: function(){
+        this.observers = {};
+    }
     , on: function(event, func, scope) {
         var params = {
             func: func
@@ -114,8 +124,15 @@ Diver.Canvas = {
         var self = this;
         this.el = document.getElementById(this.id);
         this.el.addEventListener('click', function(e){
-            var x = e.layerX - e.target.offsetLeft;
-            var y = e.layerY - e.target.offsetTop;
+            var x = 0;
+            var y = 0;
+            if (e.offsetX != undefined && e.offsetY != undefined){
+                x = e.offsetX;
+                y = e.offsetY;
+            }else{
+                x = e.layerX - e.target.offsetLeft;
+                y = e.layerY - e.target.offsetTop;
+              }
             self.onCanvasClick(x, y, e);
         });
         this.context = this.el.getContext("2d");
@@ -175,6 +192,10 @@ Diver.mixins.Drawable = {
     , isDrawable: true
     , initMixin: function(){
         this.el = new Image();
+        this.setSrc(this.src);
+    }
+    , setSrc: function(src){
+        this.src = src;
         this.el.src = this.src;
     }
     , getX: function(){
@@ -267,16 +288,30 @@ Diver.mixins.Movable = (function(){
         , y: 0
         , interval: 50
         , isMovable: true
+        , srcUp: ''
+        , srcDown: ''
+        , srcLeft: ''
+        , srcRight: ''
+        , initMixin: function(){
+            this.srcUp = this.srcUp || this.src;
+            this.srcDown = this.srcDown || this.src;
+            this.srcLeft = this.srcLeft || this.src;
+            this.srcRight = this.srcRight || this.src;
+        }
         , up: function(length){
+            this.setSrc(this.srcUp);
             moveSide.call(this, 'up', length);
         }
         , down: function(length){
+            this.setSrc(this.srcDown);
             moveSide.call(this, 'down', length);
         }
         , left: function(length){
+            this.setSrc(this.srcLeft);
             moveSide.call(this, 'left', length);
         }
         , right: function(length){
+            this.setSrc(this.srcRight);
             moveSide.call(this, 'right', length);
         }
     }
