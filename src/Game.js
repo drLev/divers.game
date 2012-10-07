@@ -13,7 +13,6 @@ Diver.Game = {
     , start: function(){
         this.canvas.on('click', this.addStarAt, this);
         this.canvas.play();
-        console.log('ready');
     }
     , addStarAt: function(x, y){
         var depth = this.canvas.getHeight() - this.bottomHeight + Math.round(Math.random() * this.bottomHeight);

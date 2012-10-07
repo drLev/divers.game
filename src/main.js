@@ -1,11 +1,6 @@
 window.onload = function(){
     var game = new Diver.Game();
     game.start();
-    var cmp = new Diver.Component({
-        
-    });
-    
-    console.log(cmp);
 };
 
 /*Preload images*/

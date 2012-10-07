@@ -14,7 +14,6 @@ Diver.Star = Diver.extend(Diver.Component, {
         Diver.Star.superclass.init.apply(this, arguments);
         
         this.fall();
-        console.log(this);
     }
     , fall: function(){
         if (this.depth < this.y){
