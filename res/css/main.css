@@ -1,0 +1,48 @@
+body {
+    width: 762px;
+    height: 685px;
+    padding: 0;
+    margin: 0;
+    margin-left: -381px;
+    left: 50%;
+    position: absolute;
+    background: url(../img/back.jpg) no-repeat top center;
+    color: #fff;
+    font-family: Arial,Tahoma;
+    font-size: 12px;
+}
+.control-panel {
+    height: 65px;
+    position: relative;
+    width: 100%;    
+}
+.control-panel__label {
+    font-size: 22px;
+    left: 30px;
+    position: absolute;
+    top: 20px;
+}
+.control-panel__button {
+    width: 163px;
+    height: 32px;
+    cursor: pointer;
+    position: absolute;
+    top: 15px;
+}
+div#delete-diver {
+    background: url(../img/delete-diver.png) no-repeat 0 0;
+    right: 210px;
+}
+div#delete-diver:hover {
+    background-image: url(../img/delete-diver-hover.png);
+}
+div#add-diver {
+    background: url(../img/add-diver.png) no-repeat 0 0;
+    right: 30px;
+}
+div#add-diver:hover {
+    background-image: url(../img/add-diver-hover.png);
+}
+#canvas{
+    margin: 0px 21px 0px 21px;
+}
