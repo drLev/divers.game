@@ -163,7 +163,7 @@ Diver.Canvas = {
     }
 };
 
-Diver.extend(Diver.Base, Diver.Canvas);
+Diver.Canvas = Diver.extend(Diver.Base, Diver.Canvas);
 
 Diver.mixins.Drawable = {
     src: ''
