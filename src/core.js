@@ -100,7 +100,7 @@ Diver.mixins.Observable = {
     }
 };
 
-Diver.Canvas = Diver.extend(Diver.Base, {
+Diver.Canvas = {
     context: null
     , mixins: [Diver.mixins.Observable]
     , drawObjects: null
@@ -161,7 +161,9 @@ Diver.Canvas = Diver.extend(Diver.Base, {
             clearInterval(this.intervalId);
         }
     }
-});
+};
+
+Diver.extend(Diver.Base, Diver.Canvas);
 
 Diver.mixins.Drawable = {
     src: ''

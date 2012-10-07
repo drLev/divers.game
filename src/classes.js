@@ -1,4 +1,4 @@
-Diver.Star = Diver.extend(Diver.Component, {
+Diver.Star = {
     srcPattern: 'res/img/tf-star{value}.png'
     , speed: 80
     , value: 0
@@ -25,4 +25,6 @@ Diver.Star = Diver.extend(Diver.Component, {
     , getZIndex: function(){
         return '-' + this.depth + this.x + this.id;
     }
-});
+};
+
+Diver.Star = Diver.extend(Diver.Component, Diver.Star);
