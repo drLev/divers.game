@@ -3,12 +3,21 @@ Diver.Ship = {
     , loadIndicator: null
     , fullSrc: 'ship-load.png'
     , emptySrc: ''
+    , loadIndicatorX: 0
+    , loadIndicatorY: 0
+    , trosTopX: 0
+    , trosTopY: 0
+    , trosBottomX: 0
+    , trosBottomY: 0
     , init: function(){
         Diver.Ship.superclass.init.apply(this, arguments);
         this.loadIndicator = new Diver.Base({
             mixins: [Diver.mixins.Drawable]
-            , x: this.x
-            , y: this.y
+            , x: this.loadIndicatorX
+            , y: this.loadIndicatorY
+            , getZIndex: function(){
+                return '0';
+            }
         });
         
         Diver.Game.addDrawObject(this.loadIndicator)
@@ -59,18 +68,22 @@ Diver.Star = Diver.extend(Diver.Component, Diver.Star);
 
 Diver.Diver = {
     mainController: null
-    , srcUp: 'res/img/Diver-go-home.png'
-    , srcDown: 'res/img/Diver-go-home.png'
-    , srcLeft: 'res/img/Diver-go-home.png'
+    , scr: 'res/img/Diver-go-harvest.png'
+    , srcUp: 'res/img/Diver-tros.png'
+    , srcDown: 'res/img/Diver-go-harvest.png'
+    , srcLeft: 'res/img/Diver-go-harvest.png'
     , srcRight: 'res/img/Diver-go-home.png'
     , init: function(){
-        var pos = Diver.Sea.getDiverStart();
-        this.x = pos.x;
-        this.y = pos.y;
+        this.x -= 25;
+        this.y -= 25;
+        Diver.Diver.superclass.init.apply(this, arguments);
         this.goHarvest();
     }
     , goHarvest: function(){
-        this.setSrc();
+        this.setSrc(this.srcDown);
+    }
+    , getZIndex: function(){
+        return this.id + 1;
     }
 };
 

@@ -1,5 +1,6 @@
 window.onload = function(){
     Diver.Game.start();
+    Diver.Game.addDiver();
 };
 
 /*Preload images*/
