@@ -56,7 +56,7 @@ Diver.Star = {
         if (this.depth < this.y){
             this.y = this.depth;
         }else{
-            this.down(this.depth - this.y);
+            this.move('down', this.depth - this.y);
         }
     }
     , getZIndex: function(){
@@ -68,19 +68,49 @@ Diver.Star = Diver.extend(Diver.Component, Diver.Star);
 
 Diver.Diver = {
     mainController: null
+    , mixins: [Diver.mixins.Observable]
     , scr: 'res/img/Diver-go-harvest.png'
     , srcUp: 'res/img/Diver-tros.png'
     , srcDown: 'res/img/Diver-go-harvest.png'
     , srcLeft: 'res/img/Diver-go-harvest.png'
     , srcRight: 'res/img/Diver-go-home.png'
+    , speed: 20
+    , action: ''
     , init: function(){
-        this.x -= 25;
-        this.y -= 25;
+        var ship = Diver.Game.getShip();
+        this.x = ship.trosTopX - 25;
+        this.y = ship.trosTopY - 25;
         Diver.Diver.superclass.init.apply(this, arguments);
+        this.on('endmove', this.onEndMove, this);
         this.goHarvest();
     }
+    , onEndMove: function(){
+        switch (this.action){
+            case 'goDown':
+                this.goFindStar();
+                break;
+            case 'goHarvesLeft':
+                
+                break;
+        }
+    }
     , goHarvest: function(){
+        var ship = Diver.Game.getShip();
+        this.move('down', ship.trosBottomY - this.y, this.goFindStar, this);
         this.setSrc(this.srcDown);
+    }
+    , goFindStar: function(side){
+        side = (side != 'left' && side != 'right') ? 'left' : side;
+        var self = this;
+        var length = side == 'left' ? this.x - 5 : Diver.Game.getWidth() - 10 - this.el.width;
+        
+        this.on('move', this.checkStar, this);
+        this.move(side, length, function(){
+            self.goFindStar(side == 'left' ? 'right' : 'left');
+        });
+    }
+    , checkStar: function(side, x){
+        
     }
     , getZIndex: function(){
         return this.id + 1;

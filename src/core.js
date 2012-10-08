@@ -49,7 +49,15 @@ Diver.apply = function(a, b, onlyNew){
             if(overrides){
                 var p = origclass.prototype;
                 for(var method in overrides){
-                    p[method] = overrides[method];
+                    if (method == 'mixins'){
+                        if (p[method]){
+                            p[method] = p[method].concat(overrides[method]);
+                        }else{
+                            p[method] = overrides[method];
+                        }
+                    }else{
+                        p[method] = overrides[method];
+                    }
                 }
             }
         }
@@ -236,7 +244,7 @@ Diver.mixins.Movable = new (function(){
 
     this.intervalId = undefined;
 
-    var moveSide = function(side, length){
+    var moveSide = function(side, length, callback, scope){
         
         var from = 0;
         var to = 0;
@@ -263,7 +271,7 @@ Diver.mixins.Movable = new (function(){
 
         var self = this;
         var start = new Date().getTime();
-        var duration = ((to - from) / this.speed) * 1000;
+        var duration = (Math.abs(to - from) / this.speed) * 1000;
 
         var setCoordValue = function(value){
             switch(side){
@@ -285,12 +293,19 @@ Diver.mixins.Movable = new (function(){
             if (progress > 1){
                 setCoordValue(to);
                 clearInterval(self.intervalId);
+                if (self.isObservable){
+                    self.fireEvent('endmove', side, to);
+                }
+                callback.call(scope || window, side, to);
                 return;
             }
 
             var result = (to - from) * progress + from;
 
-            setCoordValue(result)
+            setCoordValue(result);
+            if (self.isObservable){
+                self.fireEvent('move', side, result);
+            }
         }, self.interval);
     }
 
@@ -302,24 +317,19 @@ Diver.mixins.Movable = new (function(){
         this.queue = [];
     }
     this.stop = function(){
-        if(this.intervalId)
-            clearInterval(this.intervalId);
+        if (this.isObservable){
+            this.fireEvent('endmove', '', this.x);
+        }
+        clearInterval(this.intervalId);
     }
-    this.up = function(length){
-        this.setSrc(this.srcUp);
-        moveSide.call(this, 'up', length);
-    }
-    this.down = function(length){
-        this.setSrc(this.srcDown);
-        moveSide.call(this, 'down', length);
-    }
-    this.left = function(length){
-        this.setSrc(this.srcLeft);
-        moveSide.call(this, 'left', length);
-    }
-    this.right = function(length){
-        this.setSrc(this.srcRight);
-        moveSide.call(this, 'right', length);
+    this.move = function(side, length, callback, scope){
+        switch(side){
+            case 'up': this.setSrc(this.srcUp); break;
+            case 'down': this.setSrc(this.srcDown); break;
+            case 'left': this.setSrc(this.srcLeft); break;
+            case 'right': this.setSrc(this.srcRight); break;
+        }
+        moveSide.call(this, side, length, callback, scope);
     }
 });
 

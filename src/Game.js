@@ -3,6 +3,8 @@ Diver.Game = {
     , canvasId: 'canvas'
     , stars: null
     , divers: null
+    , lastStarId: 0
+    , lastDiverId: 0
     , bottomHeight: 40
     , ship: null
     , init: function(){
@@ -18,6 +20,10 @@ Diver.Game = {
         this.ship = new Diver.Ship({
             loadIndicatorX: 614
             , loadIndicatorY: 24
+            , trosTopX: 614
+            , trosTopY: 80
+            , trosBottomX: 614
+            , trosBottomY: 480
             , fullSrc: 'res/img/ship-load.png'
         });
         this.ship.setLoaded(true);
@@ -26,7 +32,7 @@ Diver.Game = {
     , addStarAt: function(x, y){
         var depth = this.canvas.getHeight() - this.bottomHeight + Math.round(Math.random() * this.bottomHeight);
         var star = new Diver.Star({
-            id: this.stars.length
+            id: ++this.lastStarId
             , x: x
             , y: y
             , depth: depth
@@ -37,9 +43,7 @@ Diver.Game = {
     }
     , addDiver: function(){
         var diver = new Diver.Diver({
-            id: this.divers.length
-            , x: 614
-            , y: 80
+            id: ++this.lastDiverId
         });
         
         this.divers.push(diver);
@@ -47,6 +51,26 @@ Diver.Game = {
     }
     , addDrawObject: function(obj){
         this.canvas.add(obj);
+    }
+    , getShip: function(){
+        return this.ship;
+    }
+    , getNearestStars: function(x, duration){
+        var stars = [];
+        for (var i = 0; i < this.stars.length; i++){
+            var star = this.stars[i];
+            if (Math.abs(star.x - x) <= duration){
+                stars.push(star);
+            }
+        }
+        
+        return stars
+    }
+    , getWidth: function(){
+        return this.canvas.getWidth();
+    }
+    , getHeight: function(){
+        return this.canvas.getHeight();
     }
 };
 
