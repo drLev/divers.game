@@ -222,8 +222,22 @@ Diver.mixins.Drawable = {
     }
 };
 
-Diver.mixins.Movable = (function(){
+Diver.mixins.Movable = new (function(){
+
+    this.speed = 0;
+    this.x = 0;
+    this.y = 0
+    this.interval = 50
+    this.isMovable = true
+    this.srcUp = ''
+    this.srcDown = ''
+    this.srcLeft = ''
+    this.srcRight = ''
+
+    this.intervalId = undefined;
+
     var moveSide = function(side, length){
+        
         var from = 0;
         var to = 0;
         switch(side){
@@ -246,11 +260,11 @@ Diver.mixins.Movable = (function(){
             default:
                 return;
         }
-        
+
         var self = this;
         var start = new Date().getTime();
         var duration = ((to - from) / this.speed) * 1000;
-        
+
         var setCoordValue = function(value){
             switch(side){
                 case 'up':
@@ -263,59 +277,51 @@ Diver.mixins.Movable = (function(){
                     break;
             }
         }
-                
-        setTimeout(function(){
+
+        self.intervalId = setInterval(function(){
             var now = (new Date().getTime()) - start;
             var progress = now / duration;
-            
+
             if (progress > 1){
                 setCoordValue(to);
+                clearInterval(self.intervalId);
                 return;
             }
-            
-            var result = (to - from) * progress + from;
-            
-            setCoordValue(result)
-            if (progress < 1){
-                setTimeout(arguments.callee, self.interval);
-            }
-        }, self.interval);
 
+            var result = (to - from) * progress + from;
+
+            setCoordValue(result)
+        }, self.interval);
     }
-    return {
-        speed: 0
-        , x: 0
-        , y: 0
-        , interval: 50
-        , isMovable: true
-        , srcUp: ''
-        , srcDown: ''
-        , srcLeft: ''
-        , srcRight: ''
-        , initMixin: function(){
-            this.srcUp = this.srcUp || this.src;
-            this.srcDown = this.srcDown || this.src;
-            this.srcLeft = this.srcLeft || this.src;
-            this.srcRight = this.srcRight || this.src;
-        }
-        , up: function(length){
-            this.setSrc(this.srcUp);
-            moveSide.call(this, 'up', length);
-        }
-        , down: function(length){
-            this.setSrc(this.srcDown);
-            moveSide.call(this, 'down', length);
-        }
-        , left: function(length){
-            this.setSrc(this.srcLeft);
-            moveSide.call(this, 'left', length);
-        }
-        , right: function(length){
-            this.setSrc(this.srcRight);
-            moveSide.call(this, 'right', length);
-        }
+
+    this.initMixin = function(){
+        this.srcUp = this.srcUp || this.src;
+        this.srcDown = this.srcDown || this.src;
+        this.srcLeft = this.srcLeft || this.src;
+        this.srcRight = this.srcRight || this.src;
+        this.queue = [];
     }
-})();
+    this.stop = function(){
+        if(this.intervalId)
+            clearInterval(this.intervalId);
+    }
+    this.up = function(length){
+        this.setSrc(this.srcUp);
+        moveSide.call(this, 'up', length);
+    }
+    this.down = function(length){
+        this.setSrc(this.srcDown);
+        moveSide.call(this, 'down', length);
+    }
+    this.left = function(length){
+        this.setSrc(this.srcLeft);
+        moveSide.call(this, 'left', length);
+    }
+    this.right = function(length){
+        this.setSrc(this.srcRight);
+        moveSide.call(this, 'right', length);
+    }
+});
 
 Diver.Component = {
     mixins: [Diver.mixins.Movable, Diver.mixins.Drawable]
