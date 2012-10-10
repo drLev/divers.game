@@ -104,13 +104,14 @@ Diver.Diver = {
         var self = this;
         var length = side == 'left' ? this.x - 5 : Diver.Game.getWidth() - 10 - this.el.width;
         
+        this.un('move', this.checkStar, this);
         this.on('move', this.checkStar, this);
         this.move(side, length, function(){
             self.goFindStar(side == 'left' ? 'right' : 'left');
         });
     }
     , checkStar: function(side, x){
-        
+        console.log(side);
     }
     , getZIndex: function(){
         return this.id + 1;

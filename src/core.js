@@ -101,13 +101,28 @@ Diver.mixins.Observable = {
         var params = {
             func: func
         };
-        params.scope = scope || window; 
+        params.scope = scope || window;
         if (this.observers[event]) {
-            this.observers[event].push(params);            
+            this.observers[event].push(params);
         } else {
             this.observers[event] = [params];
         }
         return this;
+    }
+    , un: function(event, func, scope){
+        scope = scope || window;
+        if (this.observers[event]) {
+            var i = this.observers[event].length;
+            var o;
+            while(i--){
+                o = this.observers[event][i];
+                if(o){
+                    if(o.func == func && o.scope == scope){
+                        this.observers[event].splice(i, 1);
+                    }
+                }
+            }
+        }
     }
     , fireEvent: function(event){
         var subscribers = this.observers[event] || []; 
