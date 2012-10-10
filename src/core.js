@@ -296,7 +296,9 @@ Diver.mixins.Movable = new (function(){
                 if (self.isObservable){
                     self.fireEvent('endmove', side, to);
                 }
-                callback.call(scope || window, side, to);
+                if (callback){
+                    callback.call(scope || window, side, to);
+                }
                 return;
             }
 
