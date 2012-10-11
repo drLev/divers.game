@@ -308,11 +308,12 @@ Diver.mixins.Movable = new (function(){
             if (progress > 1){
                 setCoordValue(to);
                 clearInterval(self.intervalId);
+                self.moving = false;
                 if (self.isObservable){
-                    self.fireEvent('endmove', side, to);
+                    self.fireEvent('endmove', self, side, to);
                 }
                 if (callback){
-                    callback.call(scope || window, side, to);
+                    callback.call(scope || window, self, side, to);
                 }
                 return;
             }
@@ -321,7 +322,7 @@ Diver.mixins.Movable = new (function(){
 
             setCoordValue(result);
             if (self.isObservable){
-                self.fireEvent('move', side, result);
+                self.fireEvent('move', self, side, result);
             }
         }, self.interval);
     }
@@ -334,12 +335,14 @@ Diver.mixins.Movable = new (function(){
         this.queue = [];
     }
     this.stop = function(){
+        this.moving = false;
+        clearInterval(this.intervalId);
         if (this.isObservable){
             this.fireEvent('endmove', '', this.x);
         }
-        clearInterval(this.intervalId);
     }
     this.move = function(side, length, callback, scope){
+        this.moving = true;
         switch(side){
             case 'up': this.setSrc(this.srcUp); break;
             case 'down': this.setSrc(this.srcDown); break;
@@ -347,6 +350,9 @@ Diver.mixins.Movable = new (function(){
             case 'right': this.setSrc(this.srcRight); break;
         }
         moveSide.call(this, side, length, callback, scope);
+    }
+    this.isMoving = function(){
+        return this.moving;
     }
 });
 

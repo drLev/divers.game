@@ -37,6 +37,7 @@ Diver.Ship = Diver.extend(Diver.Base, Diver.Ship);
 
 Diver.Star = {
     srcPattern: 'res/img/tf-star{value}.png'
+    , mixins: [Diver.mixins.Observable]
     , speed: 80
     , value: 0
     , width: 46
@@ -101,7 +102,7 @@ Diver.Diver = {
             self.goFindStar(side == 'left' ? 'right' : 'left');
         });
     }
-    , findNearestStars: function(side, x){
+    , findNearestStars: function(diver, side, x){
         var nearestStars = Diver.Game.getNearestStars(x, this.visibleDuration);
         nearestStars.sort(function(a, b){
             var diff = Math.round(Math.abs(a.x - x) - Math.abs(b.x - x));
@@ -110,7 +111,8 @@ Diver.Diver = {
         for (var i = 0; i < nearestStars.length; i++){
             var star = nearestStars[i];
             if (this.canTakeStar(star)){
-                this.goTakeStar(star);
+                this.markStar(star);
+                this.goToStar(star);
                 break;
             }
         }
@@ -121,12 +123,25 @@ Diver.Diver = {
     , getZIndex: function(){
         return this.id + 1;
     }
-    , goTakeStar: function(star){
+    , goToStar: function(star){
         this.stop();
         var length = Math.abs(this.x - star.x);
-        var side = this.x > star.x ? 'left' : 'right'
-        this.on
-        this.move(side, length);
+        var side = this.x > star.x ? 'left' : 'right';
+        this.move(side, length, function(){
+            this.takeStar(star);
+        }, this);
+    }
+    , takeStar: function(star){
+        star.un('endmove', this.takeStar, this);
+        if (star.isMoving()){
+            star.on('endmove', this.takeStar, this);
+            return;
+        }else{
+            this.on('move')
+        }
+    }
+    , plugStars: function(){
+        
     }
 };
 
