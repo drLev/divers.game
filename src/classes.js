@@ -76,23 +76,14 @@ Diver.Diver = {
     , srcRight: 'res/img/Diver-go-home.png'
     , speed: 20
     , action: ''
+    , visibleDuration: 0
     , init: function(){
+        this.visibleDuration = Diver.Game.getWidth() / 3;
         var ship = Diver.Game.getShip();
         this.x = ship.trosTopX - 25;
         this.y = ship.trosTopY - 25;
         Diver.Diver.superclass.init.apply(this, arguments);
-        this.on('endmove', this.onEndMove, this);
         this.goHarvest();
-    }
-    , onEndMove: function(){
-        switch (this.action){
-            case 'goDown':
-                this.goFindStar();
-                break;
-            case 'goHarvesLeft':
-                
-                break;
-        }
     }
     , goHarvest: function(){
         var ship = Diver.Game.getShip();
@@ -104,17 +95,38 @@ Diver.Diver = {
         var self = this;
         var length = side == 'left' ? this.x - 5 : Diver.Game.getWidth() - 10 - this.el.width;
         
-        this.un('move', this.checkStar, this);
-        this.on('move', this.checkStar, this);
+        this.un('move', this.findNearestStars, this);
+        this.on('move', this.findNearestStars, this);
         this.move(side, length, function(){
             self.goFindStar(side == 'left' ? 'right' : 'left');
         });
     }
-    , checkStar: function(side, x){
-        console.log(side);
+    , findNearestStars: function(side, x){
+        var nearestStars = Diver.Game.getNearestStars(x, this.visibleDuration);
+        nearestStars.sort(function(a, b){
+            var diff = Math.round(Math.abs(a.x - x) - Math.abs(b.x - x));
+            return diff == 0 ? 0 : diff / Math.abs(diff);
+        });
+        for (var i = 0; i < nearestStars.length; i++){
+            var star = nearestStars[i];
+            if (this.canTakeStar(star)){
+                this.goTakeStar(star);
+                break;
+            }
+        }
+    }
+    , canTakeStar: function(star){
+        return true;
     }
     , getZIndex: function(){
         return this.id + 1;
+    }
+    , goTakeStar: function(star){
+        this.stop();
+        var length = Math.abs(this.x - star.x);
+        var side = this.x > star.x ? 'left' : 'right'
+        this.on
+        this.move(side, length);
     }
 };
 

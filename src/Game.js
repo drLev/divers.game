@@ -44,6 +44,7 @@ Diver.Game = {
     , addDiver: function(){
         var diver = new Diver.Diver({
             id: ++this.lastDiverId
+            , speed: 200
         });
         
         this.divers.push(diver);
