@@ -50,14 +50,13 @@ Diver.Star = {
         this.depth -= this.height;
         this.src = this.srcPattern.replace('{value}', this.value);
         Diver.Star.superclass.init.apply(this, arguments);
-        this.wait(500).move('up', 100).wait(500).move('right', 100).wait(500).move('down', 100).wait(500).move('left', 100).wait(500);
         this.fall();
     }
     , fall: function(){
         if (this.depth < this.y){
             this.y = this.depth;
         }else{
-            this.move('down', this.depth - this.y);
+            this.moveTo(this.x, this.depth);
         }
     }
     , getZIndex: function(){

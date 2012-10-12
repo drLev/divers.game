@@ -278,40 +278,57 @@ Diver.mixins.Movable = {
         this.srcRight = this.srcRight || this.src;
         this._queueArr = [];
     }
-    , _moveSide: function(side, length){
+    , _move: function(side, length){
+        switch(side){
+            case 'up':
+                this._moveTo(this.x, this.y - length);
+                break;
+            case 'down':
+                this._moveTo(this.x, this.y + length);
+                break;
+            case 'left':
+                this._moveTo(this.x - length, this.y);
+                break;
+            case 'right':
+                this._moveTo(this.x + length, this.y);
+                break;
+        }
+    }
+    , _moveTo: function(x, y){
         this._stop();
-        this._setSideSrc(side);
 
-        var self = this;
-
-        var start = new Date().getTime();
-        var duration = (Math.abs(length) / this.speed) * 1000;
-
-        var sign = (side == 'up' || side == 'left') ? -1 : 1;
-        var coordinate = (side == 'up' || side == 'down') ? 'y' : 'x';
-        var from = this[coordinate];
-        var to = this[coordinate] + length * sign;
+        var self = this,
+            start = new Date().getTime(),
+            from = {x: this.x, y: this.y},
+            to = {x: x, y: y},
+            lengthX = to.x - from.x,
+            lengthY = to.y - from.y,
+            length = Math.sqrt(lengthX * lengthX + lengthY * lengthY),
+            duration = (Math.abs(length) / this.speed) * 1000;
 
         this._intervalId = setTimeout(function(){
-            var now = (new Date().getTime()) - start;
-            var progress = now / duration;
+            var now = (new Date().getTime()) - start,
+                progress = duration == 0 ? 0 : now / duration;
             
             if (progress >= 1){
-                self[coordinate] = to;
+                self.setPos(to.x, to.y);
                 if (self.isObservable){
-                    self.fireEvent('endmove', self, side);
+                    self.fireEvent('endmove', self);
                 }
                 self._queueEnd();
                 return;
             }
             
-            var result = Math.round(length * progress) * sign + from;
+            var resultX = Math.round(lengthX * progress) + from.x,
+                resultY = Math.round(lengthY * progress) + from.y;
+                
+//                console.log(resultX, resultY);
             
-            self[coordinate] = result;
+            self.setPos(resultX, resultY);
             if (self.isObservable){
-                self.fireEvent('move', self, side);
+                self.fireEvent('move', self);
             }
-            setTimeout(arguments.callee, self.interval);
+            self._intervalId = setTimeout(arguments.callee, self.interval);
         }, this.interval);
     }
     , _setSideSrc: function(side){
@@ -323,7 +340,7 @@ Diver.mixins.Movable = {
         }
     }
     , _stop: function(){
-        clearTimeout(this.intervalId);
+        clearTimeout(this._intervalId);
     }
     , _wait: function(time){
         this._stop();
@@ -337,19 +354,21 @@ Diver.mixins.Movable = {
         this._currentAcrion = undefined;
         if (a && a.callback){
             switch (a.type){
-                case 'move': a.callback.call(a.scope || window, this, a.side); break;
-                case 'wait': a.callback.call(a.scope || window, this, a.time); break;
+                case 'move': a.callback.call(a.scope || window, this); break;
+                case 'moveto': a.callback.call(a.scope || window, this); break;
+                case 'wait': a.callback.call(a.scope || window, this); break;
             }
         }
         this._queueRun();
     }
     , _queueRun: function(){
-        if (!this._currentAcrion){
+        if (!this._currentAcrion && this._queueArr.length){
             var a = this._queueArr.shift();
             if (a){
                 this._currentAcrion = a;
                 switch(a.type){
-                    case 'move': this._moveSide(a.side, a.length); break;
+                    case 'move': this._move(a.side, a.length); break;
+                    case 'moveto': this._moveTo(a.x, a.y); break;
                     case 'wait': this._wait(a.time); break;
                 }
             }
@@ -361,7 +380,26 @@ Diver.mixins.Movable = {
             this._queueRun();
         }
     }
-    , move: function(side, length, callback, scope){
+    , _queueStop: function(){
+        this._queueArr = [];
+        this._queueEnd();
+    }
+    , setPos: function(x, y){
+        this.x = x;
+        this.y = y;
+        return this;
+    }
+    , moveTo: function(x, y, speed, callback, scope){
+        this._queueAdd({
+            type: 'moveto'
+            , x: x
+            , y: y
+            , callback: callback
+            , scope: scope
+        });
+        return this;
+    }
+    , move: function(side, length, speed, callback, scope){
         this._queueAdd({
             type: 'move'
             , side: side
@@ -379,6 +417,10 @@ Diver.mixins.Movable = {
             , scope: scope
         });
         return this;
+    }
+    , stop: function(){
+        this._stop();
+        this._queueStop();
     }
 }
 
