@@ -267,7 +267,7 @@ Diver.mixins.Movable = {
     , srcLeft: ''
     , srcRight: ''
 
-    , _intervalId: undefined
+    , _moveIntervalId: undefined
     , _queueArr: undefined
     , _currentAcrion: undefined
 
@@ -306,7 +306,21 @@ Diver.mixins.Movable = {
             length = Math.sqrt(lengthX * lengthX + lengthY * lengthY),
             duration = (Math.abs(length) / this.speed) * 1000;
 
-        this._intervalId = setTimeout(function(){
+        if (Math.abs(lengthX) > Math.abs(lengthY)){
+            if (lengthX < 0){
+                this._setSideSrc('left');
+            }else{
+                this._setSideSrc('right');
+            }
+        }else{
+            if (lengthY < 0){
+                this._setSideSrc('up');
+            }else{
+                this._setSideSrc('down');
+            }
+        }
+
+        this._moveIntervalId = setTimeout(function(){
             var now = (new Date().getTime()) - start,
                 progress = duration == 0 ? 0 : now / duration;
             
@@ -328,7 +342,7 @@ Diver.mixins.Movable = {
             if (self.isObservable){
                 self.fireEvent('move', self);
             }
-            self._intervalId = setTimeout(arguments.callee, self.interval);
+            self._moveIntervalId = setTimeout(arguments.callee, self.interval);
         }, this.interval);
     }
     , _setSideSrc: function(side){
@@ -340,7 +354,7 @@ Diver.mixins.Movable = {
         }
     }
     , _stop: function(){
-        clearTimeout(this._intervalId);
+        clearTimeout(this._moveIntervalId);
     }
     , _wait: function(time){
         this._stop();
@@ -389,7 +403,7 @@ Diver.mixins.Movable = {
         this.y = y;
         return this;
     }
-    , moveTo: function(x, y, speed, callback, scope){
+    , moveTo: function(x, y, callback, scope){
         this._queueAdd({
             type: 'moveto'
             , x: x
@@ -399,7 +413,7 @@ Diver.mixins.Movable = {
         });
         return this;
     }
-    , move: function(side, length, speed, callback, scope){
+    , move: function(side, length, callback, scope){
         this._queueAdd({
             type: 'move'
             , side: side
