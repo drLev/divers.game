@@ -266,6 +266,7 @@ Diver.mixins.Movable = {
     , srcDown: ''
     , srcLeft: ''
     , srcRight: ''
+    , moving: false
 
     , _moveIntervalId: undefined
     , _queueArr: undefined
@@ -293,9 +294,11 @@ Diver.mixins.Movable = {
                 this._moveTo(this.x + length, this.y);
                 break;
         }
+        this.moving = false;
     }
     , _moveTo: function(x, y){
         this._stop();
+        this.moving = true;
 
         var self = this,
             start = new Date().getTime(),
@@ -326,6 +329,7 @@ Diver.mixins.Movable = {
             
             if (progress >= 1){
                 self.setPos(to.x, to.y);
+                self.moving =false;
                 if (self.isObservable){
                     self.fireEvent('endmove', self);
                 }
