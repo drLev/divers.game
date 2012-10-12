@@ -97,11 +97,13 @@ Diver.mixins.Observable = {
     , initMixin: function(){
         this.observers = {};
     }
-    , on: function(event, func, scope) {
+    , on: function(event, func, scope, single) {
         var params = {
             func: func
+            , scope: scope || window
+            , single: single === true
         };
-        params.scope = scope || window;
+
         if (this.observers[event]) {
             this.observers[event].push(params);
         } else {
@@ -127,8 +129,17 @@ Diver.mixins.Observable = {
     , fireEvent: function(event){
         var subscribers = this.observers[event] || []; 
         var params = Array.prototype.slice.call(arguments, 1);
+        var singleSubscribers = [];
         for (var i = 0; i < subscribers.length; i++)  {
-            subscribers[i].func.apply(subscribers[i].scope, params);
+            var subscriber = subscribers[i];
+            subscriber.func.apply(subscribers[i].scope, params);
+            if (subscriber.single){
+                singleSubscribers.push(subscriber);
+            }
+        }
+        for (var i = 0; i < singleSubscribers.length; i++){
+            var unSubscriber = singleSubscribers[i];
+            this.un(event, unSubscriber.func, unSubscriber.scope);
         }
     }
 };
@@ -245,116 +256,131 @@ Diver.mixins.Drawable = {
     }
 };
 
-Diver.mixins.Movable = new (function(){
+Diver.mixins.Movable = {
+    isMovable: true
+    , speed: 0
+    , x: 0
+    , y: 0
+    , interval: 50
+    , srcUp: ''
+    , srcDown: ''
+    , srcLeft: ''
+    , srcRight: ''
 
-    this.speed = 0;
-    this.x = 0;
-    this.y = 0
-    this.interval = 50
-    this.isMovable = true
-    this.srcUp = ''
-    this.srcDown = ''
-    this.srcLeft = ''
-    this.srcRight = ''
+    , _intervalId: undefined
+    , _queueArr: undefined
+    , _currentAcrion: undefined
 
-    this.intervalId = undefined;
-
-    var moveSide = function(side, length, callback, scope){
-        
-        var from = 0;
-        var to = 0;
-        switch(side){
-            case 'up':
-                from = this.y;
-                to = this.y - length;
-                break;
-            case 'down':
-                from = this.y;
-                to = this.y + length;
-                break;
-            case 'left':
-                from = this.x;
-                to = this.x - length;
-                break;
-            case 'right':
-                from = this.x;
-                to = this.x + length;
-                break;
-            default:
-                return;
-        }
-
-        var self = this;
-        var start = new Date().getTime();
-        var duration = (Math.abs(to - from) / this.speed) * 1000;
-
-        var setCoordValue = function(value){
-            switch(side){
-                case 'up':
-                case 'down':
-                    self.y = value;
-                    break;
-                case 'left':
-                case 'right':
-                    self.x = value;
-                    break;
-            }
-        }
-
-        self.intervalId = setInterval(function(){
-            var now = (new Date().getTime()) - start;
-            var progress = now / duration;
-
-            if (progress > 1){
-                setCoordValue(to);
-                clearInterval(self.intervalId);
-                self.moving = false;
-                if (self.isObservable){
-                    self.fireEvent('endmove', self, side, to);
-                }
-                if (callback){
-                    callback.call(scope || window, self, side, to);
-                }
-                return;
-            }
-
-            var result = (to - from) * progress + from;
-
-            setCoordValue(result);
-            if (self.isObservable){
-                self.fireEvent('move', self, side, result);
-            }
-        }, self.interval);
-    }
-
-    this.initMixin = function(){
+    , initMixin: function(){
         this.srcUp = this.srcUp || this.src;
         this.srcDown = this.srcDown || this.src;
         this.srcLeft = this.srcLeft || this.src;
         this.srcRight = this.srcRight || this.src;
-        this.queue = [];
+        this._queueArr = [];
     }
-    this.stop = function(){
-        this.moving = false;
-        clearInterval(this.intervalId);
-        if (this.isObservable){
-            this.fireEvent('endmove', '', this.x);
-        }
+    , _moveSide: function(side, length){
+        this._stop();
+        this._setSideSrc(side);
+
+        var self = this;
+
+        var start = new Date().getTime();
+        var duration = (Math.abs(length) / this.speed) * 1000;
+
+        var sign = (side == 'up' || side == 'left') ? -1 : 1;
+        var coordinate = (side == 'up' || side == 'down') ? 'y' : 'x';
+        var from = this[coordinate];
+        var to = this[coordinate] + length * sign;
+
+        this._intervalId = setTimeout(function(){
+            var now = (new Date().getTime()) - start;
+            var progress = now / duration;
+            
+            if (progress >= 1){
+                self[coordinate] = to;
+                if (self.isObservable){
+                    self.fireEvent('endmove', self, side);
+                }
+                self._queueEnd();
+                return;
+            }
+            
+            var result = Math.round(length * progress) * sign + from;
+            
+            self[coordinate] = result;
+            if (self.isObservable){
+                self.fireEvent('move', self, side);
+            }
+            setTimeout(arguments.callee, self.interval);
+        }, this.interval);
     }
-    this.move = function(side, length, callback, scope){
-        this.moving = true;
+    , _setSideSrc: function(side){
         switch(side){
             case 'up': this.setSrc(this.srcUp); break;
             case 'down': this.setSrc(this.srcDown); break;
             case 'left': this.setSrc(this.srcLeft); break;
             case 'right': this.setSrc(this.srcRight); break;
         }
-        moveSide.call(this, side, length, callback, scope);
     }
-    this.isMoving = function(){
-        return this.moving;
+    , _stop: function(){
+        clearTimeout(this.intervalId);
     }
-});
+    , _wait: function(time){
+        this._stop();
+        var self = this;
+        this.intervalId = setTimeout(function(){
+            self._queueEnd();
+        }, time);
+    }
+    , _queueEnd: function(){
+        var a = this._currentAcrion;
+        this._currentAcrion = undefined;
+        if (a && a.callback){
+            switch (a.type){
+                case 'move': a.callback.call(a.scope || window, this, a.side); break;
+                case 'wait': a.callback.call(a.scope || window, this, a.time); break;
+            }
+        }
+        this._queueRun();
+    }
+    , _queueRun: function(){
+        if (!this._currentAcrion){
+            var a = this._queueArr.shift();
+            if (a){
+                this._currentAcrion = a;
+                switch(a.type){
+                    case 'move': this._moveSide(a.side, a.length); break;
+                    case 'wait': this._wait(a.time); break;
+                }
+            }
+        }
+    }
+    , _queueAdd: function(action){
+        this._queueArr.push(action);
+        if (!this._currentAcrion){
+            this._queueRun();
+        }
+    }
+    , move: function(side, length, callback, scope){
+        this._queueAdd({
+            type: 'move'
+            , side: side
+            , length: length
+            , callback: callback
+            , scope: scope
+        });
+        return this;
+    }
+    , wait: function(time, callback, scope){
+        this._queueAdd({
+            type: 'wait'
+            , time: time
+            , callback: callback
+            , scope: scope
+        });
+        return this;
+    }
+}
 
 Diver.Component = {
     mixins: [Diver.mixins.Movable, Diver.mixins.Drawable]
