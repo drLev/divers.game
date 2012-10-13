@@ -40,14 +40,11 @@ Diver.Star = {
     , mixins: [Diver.mixins.Observable]
     , speed: 80
     , value: 0
-    , width: 46
-    , height: 43
+    , width: 0
+    , height: 0
     , depth: 0
     , init: function (){
         this.value = Math.ceil(Math.random() * 10);
-        this.x -= Math.round(this.width / 2);
-        this.y -= Math.round(this.height / 2);
-        this.depth -= this.height;
         this.src = this.srcPattern.replace('{value}', this.value);
         Diver.Star.superclass.init.apply(this, arguments);
         this.fall();
@@ -69,7 +66,7 @@ Diver.Star = Diver.extend(Diver.Component, Diver.Star);
 Diver.Diver = {
     mainController: null
     , mixins: [Diver.mixins.Observable]
-    , scr: 'res/img/Diver-go-harvest.png'
+    , src: 'res/img/Diver-go-harvest.png'
     , srcUp: 'res/img/Diver-tros.png'
     , srcDown: 'res/img/Diver-go-harvest.png'
     , srcLeft: 'res/img/Diver-go-harvest.png'
@@ -77,23 +74,31 @@ Diver.Diver = {
     , speed: 20
     , action: ''
     , visibleDuration: 0
+    , depth: 0
+    
+    , stars: null
+    , currentStar: null
+    
     , _searchInterval: null
     , init: function(){
+        this.stars = [];
+        
         this.visibleDuration = Diver.Game.getWidth() / 3;
         var ship = Diver.Game.getShip();
-        this.x = ship.trosTopX - 25;
-        this.y = ship.trosTopY - 25;
+        this.x = ship.trosTopX;
+        this.y = ship.trosTopY;
         Diver.Diver.superclass.init.apply(this, arguments);
+        this.depth = ship.trosBottomY;
+        this.on('move', this.onMove, this);
         this.goHarvest();
     }
     , goHarvest: function(){
-        var ship = Diver.Game.getShip();
-        this.move('down', ship.trosBottomY - this.y, this.swimingOnBottom, this);
+        this.moveTo(this.x, this.depth, this.swimingOnBottom, this);
         this.setSrc(this.srcDown);
     }
     , swimingOnBottom: function(side){
-        var leftPos = this.visibleDuration / 2 - this.width / 2;
-        var rightPos = Diver.Game.getWidth() - this.visibleDuration / 2 - this.width / 2;
+        var leftPos = this.visibleDuration / 2;
+        var rightPos = Diver.Game.getWidth() - this.visibleDuration / 2;
         
         var moveLeft = function(){
             this.moveTo(leftPos, this.y, moveRight, this);
@@ -122,38 +127,121 @@ Diver.Diver = {
                 }
             }
             if (nearestStar){
-                self.goGetStar();
-                console.log('star finded ' + star.id, star);
+                clearTimeout(self._searchInterval);
+//                Diver.log('star finded ' + star.id, star, star.x, star.y);
+                self.goGetStar(star);
             }else{
-                setTimeout(arguments.callee, self.interval);
+                self._searchInterval = setTimeout(arguments.callee, self.interval);
             }
-        }, this.interval);
+        }, 1);
     }
     , goGetStar: function(star){
+//        Diver.log('goGetStar');
+        if (this.currentStar){
+            return;
+        }
         this.stop(true);
+        var x;
+        
+        if (this.x < star.x){
+            x = star.x - this.width / 2;
+        }else if(this.x > star.x){
+            x = star.x + this.width / 2;
+        }else{
+            x = this.x;
+        }
+
+        this.currentStar = star;
+        
+        var getStar = function(){
+            var srcUp = this.srcUp;
+            
+//            Diver.log(this.x, '<', star.x, this.x < star.x);
+            
+            if (this.x < star.x){
+                this.srcDown = this.srcRight;
+                this.srcUp = this.srcRight;
+            }else if(this.x > star.x){
+                this.srcDown = this.srcLeft;
+                this.srcUp = this.srcLeft;
+            }
+
+            star.un('endmove', getStar, this);
+//            Diver.log('getting star');
+            this.moveTo(x, star.y - this.height / 2, this.takeStar, this).moveTo(this.x, this.depth, function(){
+                this.srcDown = this.srcLeft;
+                this.srcUp = srcUp;
+                this.currentStar = null;
+                if (this.stars.length < 2){
+                    this.searchStars();
+                }else{
+                    this.goHome();
+                }
+            }, this);
+        };
+        
+        this.moveTo(x, this.y, function(){
+            if (star.moving){
+                star.on('endmove', getStar, this);
+            }else{
+                getStar.call(this);
+            }
+        }, this);
     }
     , canGetStar: function(star){
         return true;
     }
+    , takeStar: function(){
+        this.stars.push(this.currentStar);
+//        Diver.log('star taken');
+    }
+    , onMove: function(){
+        console.log('move', this.stars.length, this.direction);
+        if (this.stars.length > 0){
+            switch(this.el.src){
+                case this.srcUp:
+                    this.stars[0].setPos(this.x, this.y + this.height / 2);
+                    if (this.stars.length == 2){
+                        this.stars[1].setPos(this.x + 20, this.y + this.height / 2);
+                    }
+                    break;
+                case this.srcDown:
+                case this.srcLeft:
+                    this.stars[0].setPos(this.x - this.width / 2, this.y);
+                    if (this.stars.length == 2){
+                        this.stars[1].setPos(this.x - this.width / 2, this.y + 20);
+                    }
+                    break;
+                case this.srcRight:
+                    this.stars[0].setPos(this.x + this.width / 2, this.y);
+                    if (this.stars.length == 2){
+                        this.stars[1].setPos(this.x + this.width / 2, this.y + 20);
+                    }
+                    break;
+            }
+        }
+    }
+    , goHome: function(){
+        var ship = Diver.Game.getShip()
+            , trosHeight = ship.trosBottomY - ship.trosTopY
+            , mark1 = trosHeight / 3
+            , mark2 = mark1
+            , mark3 = trosHeight / 3 - trosHeight / 5;
+        
+        this.moveTo(ship.trosBottomX, this.y)
+            .move('up', mark1)
+            .wait(500)
+            .move('up', mark2)
+            .wait(1000)
+            .move('up', mark3)
+            .wait(1500)
+            .moveTo(ship.trosBottomX, ship.trosTopY, function(){
+                this.stars = [];
+                this.goHarvest();
+            }, this);
+    }
     , getZIndex: function(){
         return this.id + 1;
-    }
-    , goToStar: function(star){
-        this.stop();
-        var length = Math.abs(this.x - star.x);
-        var side = this.x > star.x ? 'left' : 'right';
-        this.move(side, length, function(){
-            this.takeStar(star);
-        }, this);
-    }
-    , takeStar: function(star){
-        star.un('endmove', this.takeStar, this);
-        if (star.isMoving()){
-            star.on('endmove', this.takeStar, this);
-            return;
-        }else{
-            this.on('move');
-        }
     }
 };
 

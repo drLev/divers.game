@@ -64,6 +64,10 @@ Diver.apply = function(a, b, onlyNew){
     });
 })();
 
+Diver.log = function(){
+    console.log.apply(console, arguments);
+}
+
 Diver.Base = function(config){
     if (config && config.mixins){
         for (var i = 0; i < config.mixins.length; i++){
@@ -137,7 +141,7 @@ Diver.mixins.Observable = {
                 singleSubscribers.push(subscriber);
             }
         }
-        for (var i = 0; i < singleSubscribers.length; i++){
+        for (i = 0; i < singleSubscribers.length; i++){
             var unSubscriber = singleSubscribers[i];
             this.un(event, unSubscriber.func, unSubscriber.scope);
         }
@@ -189,6 +193,14 @@ Diver.Canvas = {
                 return 1;
             }
         });
+    }
+    , remove: function(obj){
+        var i = this.drawObjects.length;
+        while (i--){
+            if (this.drawObjects[i] == obj){
+                this.drawObjects.splice(i, 1);
+            }
+        }
     }
     , drawFrame: function(){
         this.context.clearRect(0, 0, this.context.canvas.width, this.context.canvas.height);
@@ -257,8 +269,8 @@ Diver.mixins.Drawable = {
     }
     , getDrawData: function(){
         return {
-            x: this.x
-            , y: this.y
+            x: this.x - this.width / 2
+            , y: this.y - this.height /2
             , img: this.el
         };
     }
@@ -278,6 +290,7 @@ Diver.mixins.Movable = {
     , srcLeft: ''
     , srcRight: ''
     , moving: false
+    , direction: ''
 
     , _moveIntervalId: undefined
     , _queueArr: undefined
@@ -326,19 +339,22 @@ Diver.mixins.Movable = {
             }else{
                 this._setSideSrc('right');
             }
-        }else{
+        }else if(Math.abs(lengthX) < Math.abs(lengthY)){
             if (lengthY < 0){
                 this._setSideSrc('up');
             }else{
                 this._setSideSrc('down');
             }
         }
+        
+//        Diver.log('start move from', from, 'to', to);
 
         this._moveIntervalId = setTimeout(function(){
             var now = (new Date().getTime()) - start,
-                progress = duration == 0 ? 0 : now / duration;
+                progress = duration == 0 ? 1 : now / duration;
             
             if (progress >= 1){
+//                Diver.log('stop move from', from, 'to', to);
                 self.setPos(to.x, to.y);
                 self.moving = false;
                 if (self.isObservable){
@@ -351,7 +367,7 @@ Diver.mixins.Movable = {
             var resultX = Math.round(lengthX * progress) + from.x,
                 resultY = Math.round(lengthY * progress) + from.y;
                 
-//                console.log(resultX, resultY);
+//                Diver.log(resultX, resultY);
             
             self.setPos(resultX, resultY);
             if (self.isObservable){
@@ -361,6 +377,8 @@ Diver.mixins.Movable = {
         }, this.interval);
     }
     , _setSideSrc: function(side){
+//        Diver.log(side);
+        this.direction = side;
         switch(side){
             case 'up': this.setSrc(this.srcUp); break;
             case 'down': this.setSrc(this.srcDown); break;
@@ -369,6 +387,7 @@ Diver.mixins.Movable = {
         }
     }
     , _stop: function(){
+//        Diver.log('stopped moving');
         clearTimeout(this._moveIntervalId);
     }
     , _wait: function(time){
@@ -378,10 +397,11 @@ Diver.mixins.Movable = {
             self._queueEnd();
         }, time);
     }
-    , _queueEnd: function(silent){
+    , _queueEnd: function(stopCallback){
+//        Diver.log('queue end with stopCallback =', stopCallback);
         var a = this._currentAcrion;
         this._currentAcrion = undefined;
-        if (a && a.callback && silent !== true){
+        if (a && a.callback && stopCallback !== true){
             switch (a.type){
                 case 'move': a.callback.call(a.scope || window, this); break;
                 case 'moveto': a.callback.call(a.scope || window, this); break;
@@ -409,14 +429,20 @@ Diver.mixins.Movable = {
             this._queueRun();
         }
     }
-    , _queueStop: function(silent){
+    , _queueStop: function(stopCallback){
         this._queueArr = [];
-        this._queueEnd(silent);
+        this._queueEnd(stopCallback);
     }
     , setPos: function(x, y){
         this.x = x;
         this.y = y;
         return this;
+    }
+    , getPos: function(){
+        return {
+            x: this.x
+            , y: this.y
+        };
     }
     , moveTo: function(x, y, callback, scope){
         this._queueAdd({
@@ -447,9 +473,9 @@ Diver.mixins.Movable = {
         });
         return this;
     }
-    , stop: function(silent){
-        this._stop(silent);
-        this._queueStop(silent);
+    , stop: function(stopCallback){
+        this._stop(stopCallback);
+        this._queueStop(stopCallback);
     }
 }
 

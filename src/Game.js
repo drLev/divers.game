@@ -5,7 +5,7 @@ Diver.Game = {
     , divers: null
     , lastStarId: 0
     , lastDiverId: 0
-    , bottomHeight: 40
+    , bottomHeight: 38
     , ship: null
     , init: function(){
         this.stars = [];
@@ -20,21 +20,25 @@ Diver.Game = {
         this.ship = new Diver.Ship({
             loadIndicatorX: 614
             , loadIndicatorY: 24
+            , width: 70
+            , height: 38
             , trosTopX: 614
-            , trosTopY: 80
+            , trosTopY: 120
             , trosBottomX: 614
-            , trosBottomY: 480
+            , trosBottomY: 500
             , fullSrc: 'res/img/ship-load.png'
         });
         this.ship.setLoaded(true);
         this.canvas.play();
     }
     , addStarAt: function(x, y){
-        var depth = this.canvas.getHeight() - this.bottomHeight + Math.round(Math.random() * this.bottomHeight);
+        var depth = this.canvas.getHeight() - this.bottomHeight + Math.round(Math.random() * this.bottomHeight) - 25;
         var star = new Diver.Star({
             id: ++this.lastStarId
             , x: x
             , y: y
+            , width: 46
+            , height: 43
             , depth: depth
         });
         
@@ -44,7 +48,9 @@ Diver.Game = {
     , addDiver: function(){
         var diver = new Diver.Diver({
             id: ++this.lastDiverId
-            , speed: 200
+            , speed: 80
+            , width: 66
+            , height: 63
         });
         
         this.divers.push(diver);
@@ -52,6 +58,9 @@ Diver.Game = {
     }
     , addDrawObject: function(obj){
         this.canvas.add(obj);
+    }
+    , removeDrawObject: function(obj){
+        this.canvas.remove(obj);
     }
     , getShip: function(){
         return this.ship;
