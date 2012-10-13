@@ -208,6 +208,9 @@ Diver.Canvas = {
             var obj = this.drawObjects[i];
             if (obj.isDrawable){
                 var data = obj.getDrawData();
+                if (data.hidden){
+                    continue;
+                }
                 this.context.moveTo(0, 0);
                 this.context.drawImage(data.img, data.x, data.y);
             }
@@ -236,6 +239,7 @@ Diver.mixins.Drawable = {
     , height: 0
     , el: null
     , isDrawable: true
+    , hidden: false
     , initMixin: function(){
         var self = this;
         this.el = new Image();
@@ -272,6 +276,7 @@ Diver.mixins.Drawable = {
             x: this.x - this.width / 2
             , y: this.y - this.height /2
             , img: this.el
+            , hidden: this.hidden
         };
     }
     , getZIndex: function(){

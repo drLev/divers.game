@@ -18,13 +18,13 @@ Diver.Game = {
         });
         this.canvas.on('click', this.addStarAt, this);
         this.ship = new Diver.Ship({
-            loadIndicatorX: 614
-            , loadIndicatorY: 24
+            loadIndicatorX: 648
+            , loadIndicatorY: 42
             , width: 70
             , height: 38
-            , trosTopX: 614
+            , trosTopX: 610
             , trosTopY: 120
-            , trosBottomX: 614
+            , trosBottomX: 610
             , trosBottomY: 500
             , fullSrc: 'res/img/ship-load.png'
         });

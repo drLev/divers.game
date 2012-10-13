@@ -15,6 +15,7 @@ Diver.Ship = {
             mixins: [Diver.mixins.Drawable]
             , x: this.loadIndicatorX
             , y: this.loadIndicatorY
+            , hidden: true
             , getZIndex: function(){
                 return '0';
             }
