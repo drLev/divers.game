@@ -136,7 +136,7 @@ Diver.mixins.Observable = {
         var singleSubscribers = [];
         for (var i = 0; i < subscribers.length; i++)  {
             var subscriber = subscribers[i];
-            subscriber.func.apply(subscribers[i].scope, params);
+            subscriber.func.apply(subscriber.scope, params);
             if (subscriber.single){
                 singleSubscribers.push(subscriber);
             }

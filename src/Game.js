@@ -2,6 +2,7 @@ Diver.Game = {
     canvas: null
     , canvasId: 'canvas'
     , stars: null
+    , excludeSearchStars: null
     , divers: null
     , lastStarId: 0
     , lastDiverId: 0
@@ -10,6 +11,7 @@ Diver.Game = {
     , init: function(){
         this.stars = [];
         this.divers = [];
+        this.excludeSearchStars = [];
     }
     , start: function(){
         this.canvas = new Diver.Canvas({
@@ -26,9 +28,8 @@ Diver.Game = {
             , trosTopY: 120
             , trosBottomX: 610
             , trosBottomY: 500
-            , fullSrc: 'res/img/ship-load.png'
+            , loadSrc: 'res/img/ship-load.png'
         });
-        this.ship.setLoaded(true);
         this.canvas.play();
     }
     , addStarAt: function(x, y){
@@ -45,12 +46,20 @@ Diver.Game = {
         this.stars.push(star);
         this.addDrawObject(star);
     }
+    , removeStar: function(star){
+        var index = this.stars.indexOf(star);
+        if (index >= 0){
+            this.stars.splice(index, 1);
+        }
+        this.removeDrawObject(star);
+    }
     , addDiver: function(){
         var diver = new Diver.Diver({
             id: ++this.lastDiverId
-            , speed: 80
+            , speed: 200
             , width: 66
             , height: 63
+            , markedStars: this.divers.length > 0 ? this.divers[0].markedStars : []
         });
         
         this.divers.push(diver);
@@ -65,12 +74,24 @@ Diver.Game = {
     , getShip: function(){
         return this.ship;
     }
+    , excludeSearchStar: function(starId){
+        if (this.excludeSearchStars.indexOf(starId) < 0){
+            this.excludeSearchStars.push(starId);
+        }
+    }
+    , includeSearchStar: function(starId){
+        var index = this.excludeSearchStars.indexOf(starId);
+        if (index >= 0){
+            this.excludeSearchStars.splice(index, 1);
+        }
+    }
     , getNearestStars: function(x, duration){
         var stars = [];
+//        Diver.log(x, duration);
 
         for (var i = 0; i < this.stars.length; i++){
             var star = this.stars[i];
-            if (Math.abs(star.x - x) <= duration){
+            if (Math.abs(star.x - x) <= duration && this.excludeSearchStars.indexOf(star.id) < 0){
                 stars.push(star);
             }
         }
