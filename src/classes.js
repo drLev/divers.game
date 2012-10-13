@@ -77,6 +77,7 @@ Diver.Diver = {
     , speed: 20
     , action: ''
     , visibleDuration: 0
+    , _searchInterval: null
     , init: function(){
         this.visibleDuration = Diver.Game.getWidth() / 3;
         var ship = Diver.Game.getShip();
@@ -87,37 +88,51 @@ Diver.Diver = {
     }
     , goHarvest: function(){
         var ship = Diver.Game.getShip();
-        this.move('down', ship.trosBottomY - this.y, this.goFindStar, this);
+        this.move('down', ship.trosBottomY - this.y, this.swimingOnBottom, this);
         this.setSrc(this.srcDown);
     }
-    , goFindStar: function(side){
-        side = (side != 'left' && side != 'right') ? 'left' : side;
-        var self = this;
-        var length = side == 'left' ? this.x - 5 : Diver.Game.getWidth() - 10 - this.el.width;
+    , swimingOnBottom: function(side){
+        var leftPos = this.visibleDuration / 2 - this.width / 2;
+        var rightPos = Diver.Game.getWidth() - this.visibleDuration / 2 - this.width / 2;
         
-        this.un('move', this.findNearestStars, this);
-        this.on('move', this.findNearestStars, this);
-        this.move(side, length, function(){
-            self.un('move', this.findNearestStars, self);
-            self.goFindStar(side == 'left' ? 'right' : 'left');
-        });
-    }
-    , findNearestStars: function(diver, side, x){
-        var nearestStars = Diver.Game.getNearestStars(x, this.visibleDuration);
-        nearestStars.sort(function(a, b){
-            var diff = Math.round(Math.abs(a.x - x) - Math.abs(b.x - x));
-            return diff == 0 ? 0 : diff / Math.abs(diff);
-        });
-        for (var i = 0; i < nearestStars.length; i++){
-            var star = nearestStars[i];
-            if (this.canTakeStar(star)){
-                this.markStar(star);
-                this.goToStar(star);
-                break;
-            }
+        var moveLeft = function(){
+            this.moveTo(leftPos, this.y, moveRight, this);
         }
+        var moveRight = function(){
+            this.moveTo(rightPos, this.y, moveLeft, this); 
+        }
+        moveLeft.call(this);
+        
+        this.searchStars();
     }
-    , canTakeStar: function(star){
+    , searchStars: function(){
+        clearTimeout(this._searchInterval);
+        
+        var self = this;
+
+        this._searchInterval = setTimeout(function(){
+            var center = self.getCenter(),
+                nearestStars = Diver.Game.getNearestStars(center.x, self.visibleDuration / 2),
+                nearestStar = null;
+
+            for (var i = 0; i < nearestStars.length; i++){
+                var star = nearestStars[i];
+                if(self.canGetStar(star) && (!nearestStar || Math.abs(star.x - center.x) < Math.abs(nearestStar.x - center.x))){
+                    nearestStar = star;
+                }
+            }
+            if (nearestStar){
+                self.goGetStar();
+                console.log('star finded ' + star.id, star);
+            }else{
+                setTimeout(arguments.callee, self.interval);
+            }
+        }, this.interval);
+    }
+    , goGetStar: function(star){
+        this.stop(true);
+    }
+    , canGetStar: function(star){
         return true;
     }
     , getZIndex: function(){

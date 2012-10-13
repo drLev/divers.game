@@ -58,6 +58,7 @@ Diver.Game = {
     }
     , getNearestStars: function(x, duration){
         var stars = [];
+
         for (var i = 0; i < this.stars.length; i++){
             var star = this.stars[i];
             if (Math.abs(star.x - x) <= duration){
@@ -65,7 +66,7 @@ Diver.Game = {
             }
         }
         
-        return stars
+        return stars;
     }
     , getWidth: function(){
         return this.canvas.getWidth();

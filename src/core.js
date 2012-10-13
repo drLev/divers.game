@@ -225,7 +225,12 @@ Diver.mixins.Drawable = {
     , el: null
     , isDrawable: true
     , initMixin: function(){
+        var self = this;
         this.el = new Image();
+        this.el.onload = function(){
+            self.width = self.el.width;
+            self.height = self.el.height;
+        };
         this.setSrc(this.src);
     }
     , setSrc: function(src){
@@ -237,6 +242,12 @@ Diver.mixins.Drawable = {
     }
     , getY: function(){
         return this.y;
+    }
+    , getCenter: function(){
+        return {
+            x: this.x + this.width / 2
+            , y: this.y + this.height / 2
+        }
     }
     , getWidth: function(){
         return this.width;
@@ -329,7 +340,7 @@ Diver.mixins.Movable = {
             
             if (progress >= 1){
                 self.setPos(to.x, to.y);
-                self.moving =false;
+                self.moving = false;
                 if (self.isObservable){
                     self.fireEvent('endmove', self);
                 }
@@ -367,10 +378,10 @@ Diver.mixins.Movable = {
             self._queueEnd();
         }, time);
     }
-    , _queueEnd: function(){
+    , _queueEnd: function(silent){
         var a = this._currentAcrion;
         this._currentAcrion = undefined;
-        if (a && a.callback){
+        if (a && a.callback && silent !== true){
             switch (a.type){
                 case 'move': a.callback.call(a.scope || window, this); break;
                 case 'moveto': a.callback.call(a.scope || window, this); break;
@@ -398,9 +409,9 @@ Diver.mixins.Movable = {
             this._queueRun();
         }
     }
-    , _queueStop: function(){
+    , _queueStop: function(silent){
         this._queueArr = [];
-        this._queueEnd();
+        this._queueEnd(silent);
     }
     , setPos: function(x, y){
         this.x = x;
@@ -436,9 +447,9 @@ Diver.mixins.Movable = {
         });
         return this;
     }
-    , stop: function(){
-        this._stop();
-        this._queueStop();
+    , stop: function(silent){
+        this._stop(silent);
+        this._queueStop(silent);
     }
 }
 
