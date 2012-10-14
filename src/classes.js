@@ -90,6 +90,7 @@ Diver.Diver = {
     , visibleDuration: 0
     , depth: 0
     , markedStars: null
+    , srcDirection: ''
     
     , stars: null
     , currentStar: null
@@ -109,6 +110,10 @@ Diver.Diver = {
         this.depth = ship.trosBottomY;
         this.on('move', this.onMove, this);
         this.goHarvest();
+    }
+    , _setSideSrc: function(side){
+        this.srcDirection = this.srcDirection || side;
+        Diver.Diver.superclass._setSideSrc.call(this, this.srcDirection);
     }
     , receiveMessage: function(msg){
         msg = msg || {};
@@ -133,17 +138,19 @@ Diver.Diver = {
         }
     }
     , goHarvest: function(){
+        this.srcDirection = 'down';
         this.moveTo(this.x, this.depth, this.swimingOnBottom, this);
-        this.setSrc(this.srcDown);
     }
     , swimingOnBottom: function(side){
         var leftPos = this.visibleDuration / 2;
         var rightPos = Diver.Game.getWidth() - this.visibleDuration / 2;
         
         var moveLeft = function(){
+            this.srcDirection = 'left';
             this.moveTo(leftPos, this.y, moveRight, this);
         }
         var moveRight = function(){
+            this.srcDirection = 'right';
             this.moveTo(rightPos, this.y, moveLeft, this); 
         }
         moveLeft.call(this);
@@ -209,32 +216,24 @@ Diver.Diver = {
         this.currentStar = star;
         this.markStar(star.id);
         this.stop(true);
+        
         var x;
         
         if (this.x < star.x){
+            this.srcDirection = 'right';
             x = star.x - this.width / 2;
         }else if(this.x > star.x){
+            this.srcDirection = 'left';
             x = star.x + this.width / 2;
         }else{
             x = this.x;
         }
         
         var getStar = function(){
-            var srcUp = this.srcUp;
-            
-            if (this.x < star.x){
-                this.srcDown = this.srcRight;
-                this.srcUp = this.srcRight;
-            }else if(this.x > star.x){
-                this.srcDown = this.srcLeft;
-                this.srcUp = this.srcLeft;
-            }
 
             star.un('endmove', getStar, this);
             
             this.moveTo(x, star.y - this.height / 2, this.takeStar, this).moveTo(this.x, this.depth, function(){
-                this.srcDown = this.srcLeft;
-                this.srcUp = srcUp;
                 this.currentStar = null;
                 if (this.stars.length < 2){
                     this.swimingOnBottom();
@@ -261,25 +260,28 @@ Diver.Diver = {
 //        Diver.log('star taken');
     }
     , onMove: function(){
-//        Diver.log('move', this.stars.length, this.direction, this.el.src.indexOf(this.srcUp), this.el.src, this.srcUp);
+        Diver.log('move', this.stars.length, this.direction, this.el.src.indexOf(this.srcUp), this.el.src, this.srcUp);
         if (this.stars.length > 0){
-            if (this.el.src.indexOf(this.srcUp) >= 0){
-                this.stars[0].setPos(this.x + 20, this.y - this.height / 2);
-                if (this.stars.length == 2){
-                    this.stars[1].setPos(this.x + 30, this.y - this.height / 2 + 20);
-                }
-            }
-            if (this.el.src.indexOf(this.srcDown) >= 0 || this.el.src.indexOf(this.srcLeft) >= 0){
-                this.stars[0].setPos(this.x - this.width / 2, this.y);
-                if (this.stars.length == 2){
-                    this.stars[1].setPos(this.x - this.width / 2, this.y + 20);
-                }
-            }
-            if (this.el.src.indexOf(this.srcRight) >= 0){
-                this.stars[0].setPos(this.x + this.width / 2, this.y);
-                if (this.stars.length == 2){
-                    this.stars[1].setPos(this.x + this.width / 2, this.y + 20);
-                }
+            switch(this.direction){
+                case 'up':
+                    this.stars[0].setPos(this.x + 20, this.y - this.height / 2);
+                    if (this.stars.length == 2){
+                        this.stars[1].setPos(this.x + 30, this.y - this.height / 2 + 20);
+                    }
+                    break
+                case 'down':
+                case 'left':
+                    this.stars[0].setPos(this.x - this.width / 2, this.y);
+                    if (this.stars.length == 2){
+                        this.stars[1].setPos(this.x - this.width / 2, this.y + 20);
+                    }
+                    break;
+                case 'right':
+                    this.stars[0].setPos(this.x + this.width / 2, this.y);
+                    if (this.stars.length == 2){
+                        this.stars[1].setPos(this.x + this.width / 2, this.y + 20);
+                    }
+                    break;
             }
         }
     }
@@ -290,7 +292,15 @@ Diver.Diver = {
             , mark2 = mark1
             , mark3 = trosHeight / 3 - trosHeight / 5;
         
-        this.moveTo(ship.trosBottomX, this.y)
+        if (this.x < ship.trosBottomX){
+            this.srcDirection = 'right';
+        }else if(this.x > ship.trosBottomX){
+            this.srcDirection = 'left';
+        }
+        
+        this.moveTo(ship.trosBottomX, this.y, function(){
+            this.srcDirection = 'up';
+        }, this)
             .move('up', mark1)
             .wait(500)
             .move('up', mark2)

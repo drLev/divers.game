@@ -295,7 +295,7 @@ Diver.mixins.Movable = {
     , srcLeft: ''
     , srcRight: ''
     , moving: false
-    , direction: ''
+    , direction: '' // up, down, left, right
 
     , _moveIntervalId: undefined
     , _queueArr: undefined
@@ -328,15 +328,17 @@ Diver.mixins.Movable = {
     , _moveTo: function(x, y){
         this._stop();
         this.moving = true;
+        x = (typeof x != 'number') ? this.x : x;
+        y = (typeof y != 'number') ? this.y : y;
 
-        var self = this,
-            start = new Date().getTime(),
-            from = {x: this.x, y: this.y},
-            to = {x: x, y: y},
-            lengthX = to.x - from.x,
-            lengthY = to.y - from.y,
-            length = Math.sqrt(lengthX * lengthX + lengthY * lengthY),
-            duration = (Math.abs(length) / this.speed) * 1000;
+        var self = this
+        , start = new Date().getTime()
+        , from = {x: this.x, y: this.y}
+        , to = {x: x, y: y}
+        , lengthX = to.x - from.x
+        , lengthY = to.y - from.y
+        , length = Math.sqrt(lengthX * lengthX + lengthY * lengthY)
+        , duration = (Math.abs(length) / this.speed) * 1000;
 
         if (Math.abs(lengthX) > Math.abs(lengthY)){
             if (lengthX < 0){
