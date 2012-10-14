@@ -213,7 +213,43 @@ Diver.Canvas = {
                 }
                 this.context.moveTo(0, 0);
                 this.context.drawImage(data.img, data.x, data.y);
+                
+                if (Diver.debug){
+                    this.context.lineWidth = 1;
+                    this.context.beginPath();
+                    this.context.moveTo(obj.x - 50, obj.y);
+                    this.context.lineTo(obj.x + 50, obj.y);
+                    this.context.stroke();
+
+                    this.context.lineWidth = 1;
+                    this.context.beginPath();
+                    this.context.moveTo(obj.x, obj.y - 50);
+                    this.context.lineTo(obj.x, obj.y + 50);
+                    this.context.stroke();
+                    
+                    this.context.lineWidth = 1;
+                    this.context.beginPath();
+                    this.context.moveTo(obj.x - obj.width / 2, obj.y - obj.height / 2);
+                    this.context.lineTo(obj.x + obj.width / 2, obj.y - obj.height / 2);
+                    this.context.lineTo(obj.x + obj.width / 2, obj.y + obj.height / 2);
+                    this.context.lineTo(obj.x - obj.width / 2, obj.y + obj.height / 2);
+                    this.context.closePath();
+                    this.context.stroke();
+                }
             }
+        }
+        if (Diver.debug){
+            this.context.lineWidth = 1;
+            this.context.beginPath();
+            this.context.moveTo((this.getWidth() / 6) * 5, 0);
+            this.context.lineTo((this.getWidth() / 6) * 5, this.getHeight());
+            this.context.stroke();
+
+            this.context.lineWidth = 1;
+            this.context.beginPath();
+            this.context.moveTo(this.getWidth() / 6, 0);
+            this.context.lineTo(this.getWidth() / 6, this.getHeight());
+            this.context.stroke();
         }
     }
     , play: function(){

@@ -164,13 +164,12 @@ Diver.Diver = {
         var self = this;
 
         this._searchInterval = setTimeout(function(){
-            var center = self.getCenter(),
-                nearestStars = Diver.Game.getNearestStars(center.x, self.visibleDuration / 2),
+            var nearestStars = Diver.Game.getNearestStars(self.x, self.visibleDuration / 2),
                 nearestStar = null;
 
             for (var i = 0; i < nearestStars.length; i++){
                 var star = nearestStars[i];
-                if(self.canGetStar(star) && (!nearestStar || Math.abs(star.getCenter().x - center.x) < Math.abs(nearestStar.getCenter().x - center.x))){
+                if(self.canGetStar(star) && (!nearestStar || Math.abs(star.x - self.x) < Math.abs(nearestStar.x - self.x))){
                     nearestStar = star;
                 }
             }
@@ -209,7 +208,6 @@ Diver.Diver = {
         }
     }
     , goGetStar: function(star){
-//        Diver.log('goGetStar');
         if (this.currentStar){
             return;
         }
@@ -260,7 +258,7 @@ Diver.Diver = {
 //        Diver.log('star taken');
     }
     , onMove: function(){
-        Diver.log('move', this.stars.length, this.direction, this.el.src.indexOf(this.srcUp), this.el.src, this.srcUp);
+//        Diver.log('move', this.stars.length, this.direction, this.el.src.indexOf(this.srcUp), this.el.src, this.srcUp);
         if (this.stars.length > 0){
             switch(this.direction){
                 case 'up':
