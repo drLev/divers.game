@@ -1,5 +1,6 @@
 window.onload = function(){
     Diver.Game.start();
+    Diver.Game.addDiver();
     document.getElementById('add-diver').onclick = function(){
         Diver.Game.addDiver();
     }

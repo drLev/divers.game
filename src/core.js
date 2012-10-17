@@ -131,19 +131,22 @@ Diver.mixins.Observable = {
         }
     }
     , fireEvent: function(event){
-        var subscribers = this.observers[event] || []; 
+        var subscribers = [];
         var params = Array.prototype.slice.call(arguments, 1);
-        var singleSubscribers = [];
-        for (var i = 0; i < subscribers.length; i++)  {
-            var subscriber = subscribers[i];
-            subscriber.func.apply(subscriber.scope, params);
+        var subscriber;
+        this.observers[event] = this.observers[event] || [];
+        
+        for (var i = 0; i < this.observers[event].length; i++){
+            subscriber = this.observers[event][i];
+            subscribers.push(subscriber);
             if (subscriber.single){
-                singleSubscribers.push(subscriber);
+                this.un(event, subscriber.func, subscriber.scope);
             }
         }
-        for (i = 0; i < singleSubscribers.length; i++){
-            var unSubscriber = singleSubscribers[i];
-            this.un(event, unSubscriber.func, unSubscriber.scope);
+        
+        for (i = 0; i < subscribers.length; i++)  {
+            subscriber = subscribers[i];
+            subscriber.func.apply(subscriber.scope, params);
         }
     }
 };
@@ -249,6 +252,26 @@ Diver.Canvas = {
             this.context.beginPath();
             this.context.moveTo(this.getWidth() / 6, 0);
             this.context.lineTo(this.getWidth() / 6, this.getHeight());
+            this.context.stroke();
+            
+            var ship = Diver.Game.getShip();
+            
+            this.context.lineWidth = 1;
+            this.context.beginPath();
+            this.context.moveTo(ship.trosTopX - 50, ship.trosTopY);
+            this.context.lineTo(ship.trosTopX + 50, ship.trosTopY);
+            this.context.stroke();
+            
+            this.context.lineWidth = 1;
+            this.context.beginPath();
+            this.context.moveTo(ship.trosBottomX - 50, ship.trosBottomY);
+            this.context.lineTo(ship.trosBottomX + 50, ship.trosBottomY);
+            this.context.stroke();
+            
+            this.context.lineWidth = 1;
+            this.context.beginPath();
+            this.context.moveTo(ship.trosTopX, ship.trosTopY);
+            this.context.lineTo(ship.trosBottomX, ship.trosBottomY);
             this.context.stroke();
         }
     }
@@ -530,3 +553,56 @@ Diver.Component = {
 };
 
 Diver.Component = Diver.extend(Diver.Base, Diver.Component);
+
+Diver.mixins.Resource = {
+    isResource: true
+    , resUseSpeed: 50
+    , resVolume: 3000
+    , resValue: 3000
+    , resDangerLevel: 1000
+    , resInterval: 100
+    , _resIntervalId: null
+    , initMixin: function(){
+        this.resValue = this.resVolume;
+    }
+    , resStartUse: function(){
+        this.resStopUse();
+        var self = this;
+//        Diver.log(this.resValue);
+        this._resIntervalId = setInterval(function(){
+            self.resUse();
+        }, this.resInterval);
+    }
+    , resStopUse: function(){
+        clearInterval(this._resIntervalId);
+    }
+    , resUse: function(){
+        this.resValue -= this.resGetUseSpeed() * this.resInterval / 1000;
+        this.resCheckDangerLevel();
+//        Diver.log(this.resValue);
+    }
+    , resGetUseSpeed: function(){
+        return this.resUseSpeed;
+    }
+    , resGetDangerLevel: function(){
+        return this.resDangerLevel;
+    }
+    , resCheckDangerLevel: function(){
+        if (this.resValue <= this.resGetDangerLevel()){
+            if (this.isObservable){
+                this.fireEvent('resdanger', this);
+            }
+        }
+        return true;
+    }
+    , resUseOnce: function(value){
+        this.resValue -= value;
+        this.resCheckDangerLevel();
+    }
+    , resGetEmptySize: function(){
+        return this.resVolume - this.resValue;
+    }
+    , resSetFull: function(){
+        this.resValue = this.resVolume;
+    }
+}

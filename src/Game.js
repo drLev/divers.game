@@ -25,7 +25,7 @@ Diver.Game = {
             , width: 70
             , height: 38
             , trosTopX: 610
-            , trosTopY: 120
+            , trosTopY: 100
             , trosBottomX: 610
             , trosBottomY: 500
             , loadSrc: 'res/img/ship-load.png'
@@ -60,6 +60,9 @@ Diver.Game = {
             , width: 66
             , height: 63
             , markedStars: this.divers.length > 0 ? this.divers[0].markedStars : []
+            , resVolume: 20000
+            , resValue: 20000
+            , tipSrc: 'res/img/thought.png'
         });
         
         this.divers.push(diver);
@@ -85,17 +88,7 @@ Diver.Game = {
             this.excludeSearchStars.splice(index, 1);
         }
     }
-    , minX: 200
-    , maxX: 500
     , getNearestStars: function(x, duration){
-        if (x < this.minX){
-            this.minX = x;
-            Diver.log('min', x);
-        }
-        if (x > this.maxX){
-            this.maxX = x;
-            Diver.log('max', x);
-        }
         var stars = [];
 //        Diver.log(x, duration);
 
