@@ -67,6 +67,15 @@ Diver.Game = {
         
         this.divers.push(diver);
         this.addDrawObject(diver);
+        return diver;
+    }
+    , killDiver: function(){
+        if (this.divers.length > 0){
+            var diver = this.divers.shift();
+            if (diver){
+                diver.kill();
+            }
+        }
     }
     , addDrawObject: function(obj){
         this.canvas.add(obj);
@@ -106,6 +115,9 @@ Diver.Game = {
     }
     , getHeight: function(){
         return this.canvas.getHeight();
+    }
+    , refreshObjectsZIndex: function(){
+        this.canvas.sortObjects();
     }
 };
 

@@ -189,6 +189,9 @@ Diver.Canvas = {
     }
     , add: function(obj){
         this.drawObjects.push(obj);
+        this.sortObjects();
+    }
+    , sortObjects: function(){
         this.drawObjects.sort(function(a, b){
             if (a.getZIndex() < b.getZIndex()){
                 return -1;
@@ -549,6 +552,11 @@ Diver.Component = {
     mixins: [Diver.mixins.Movable, Diver.mixins.Drawable]
     , init: function(){
         Diver.Component.superclass.init.apply(this, arguments);
+    }
+    , destroy: function(){
+        this.stop();
+        Diver.Game.removeDrawObject(this);
+        delete this;
     }
 };
 

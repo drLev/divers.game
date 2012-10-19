@@ -1,8 +1,11 @@
 window.onload = function(){
     Diver.Game.start();
-    Diver.Game.addDiver();
+    window.diver = Diver.Game.addDiver();
     document.getElementById('add-diver').onclick = function(){
         Diver.Game.addDiver();
+    }
+    document.getElementById('delete-diver').onclick = function(){
+        Diver.Game.killDiver();
     }
 };
 

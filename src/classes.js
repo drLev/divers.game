@@ -9,7 +9,7 @@ Diver.Ship = {
     , trosBottomX: 0
     , trosBottomY: 0
     , compressorSpeed: 3000
-    
+
     , _currentCompressorDiver: null
     , _diversCompressorQueue: null
     , init: function(){
@@ -25,7 +25,7 @@ Diver.Ship = {
                 return '0';
             }
         });
-        
+
         Diver.Game.addDrawObject(this.loadIndicator)
     }
     , setLoaded: function(loaded){
@@ -100,7 +100,7 @@ Diver.Ship = {
             , callback: callback
             , scope: scope
         });
-        
+
         this._runLoadBallonQueue();
     }
 };
@@ -115,10 +115,12 @@ Diver.Star = {
     , width: 0
     , height: 0
     , depth: 0
+    , realZIndexFn: null
     , init: function (){
         this.value = Math.ceil(Math.random() * 10);
         this.src = this.srcPattern.replace('{value}', this.value);
         Diver.Star.superclass.init.apply(this, arguments);
+        this.realZIndexFn = this.getZIndex;
         this.fall();
     }
     , fall: function(){
@@ -164,17 +166,18 @@ Diver.Diver = {
     , needLoadBalloon: false
     , tip: null
     , tipSrc: false
-    
+    , killing: false
+
     , stars: null
     , currentStar: null
-    
+
     , _searchInterval: null
     , init: function(){
         this.stars = [];
         this.markedStars = this.markedStars || [];
-        
+
         Diver.Radio.on('message', this.receiveMessage, this);
-        
+
         this.visibleDuration = Diver.Game.getWidth() / 3;
         var ship = Diver.Game.getShip();
         this.x = ship.trosTopX;
@@ -192,11 +195,11 @@ Diver.Diver = {
         msg = msg || {};
         msg.type = msg.type || 'none';
         msg.sender = msg.sender || this;
-        
+
         if (msg.sender == this){
             return;
         }
-        
+
         switch (msg.type){
             case 'markStar':
                 if (typeof msg.data == 'number'){
@@ -282,23 +285,23 @@ Diver.Diver = {
         this.action = 'swimingonbottom';
         var leftPos = this.visibleDuration / 2 - 1;
         var rightPos = Diver.Game.getWidth() - this.visibleDuration / 2 + 1;
-        
+
         var moveLeft = function(){
             this.srcDirection = 'left';
             this.moveTo(leftPos, this.y, moveRight, this);
         }
         var moveRight = function(){
             this.srcDirection = 'right';
-            this.moveTo(rightPos, this.y, moveLeft, this); 
+            this.moveTo(rightPos, this.y, moveLeft, this);
         }
         moveLeft.call(this);
-        
+
         this.searchStars();
 //        Diver.Game.excludeSearchStar(starId);
     }
     , searchStars: function(){
         clearTimeout(this._searchInterval);
-        
+
         var self = this;
 
         this._searchInterval = setTimeout(function(){
@@ -355,9 +358,9 @@ Diver.Diver = {
         this.currentStar = star;
         this.markStar(star.id);
         this.stop(true);
-        
+
         var x;
-        
+
         if (this.x < star.x){
             this.srcDirection = 'right';
             x = star.x - this.width / 2;
@@ -367,13 +370,13 @@ Diver.Diver = {
         }else{
             x = this.x;
         }
-        
+
         var getStar = function(){
-            
+
             this.action = 'gettingstar';
 
             star.un('endmove', getStar, this);
-            
+
             this.moveTo(x, star.y - this.height / 2, this.takeStar, this).moveTo(this.x, this.depth, function(){
                 this.currentStar = null;
                 if (this.stars.length < 2){
@@ -383,10 +386,10 @@ Diver.Diver = {
                 }
             }, this);
         };
-        
+
         this.moveTo(x, this.y, function(){
             if (star.moving){
-                star.on('endmove', getStar, this);
+                star.on('endmove', getStar, this, true);
             }else{
                 getStar.call(this);
             }
@@ -398,6 +401,11 @@ Diver.Diver = {
     }
     , takeStar: function(){
         this.stars.push(this.currentStar);
+        var self = this;
+        this.currentStar.getZIndex = function(){
+            return 'd' + (self.id * 5 + self.stars.indexOf(this) - 2);
+        }
+        Diver.Game.refreshObjectsZIndex();
 //        Diver.log('star taken');
     }
     , onMove: function(){
@@ -439,18 +447,18 @@ Diver.Diver = {
             , mark1 = ship.getMark(1)
             , mark2 = ship.getMark(2)
             , mark3 = ship.getMark(3);
-        
+
         if (this.x < ship.trosBottomX){
             this.srcDirection = 'right';
         }else if(this.x > ship.trosBottomX){
             this.srcDirection = 'left';
         }
-        
+
         var onStartUp = function(){
             this.srcDirection = 'up';
             this.resUseOnce(this.getCompensatorNeed());
         }
-        
+
         if (this.y > ship.trosBottomY || this.y == ship.trosBottomY){
             if (this.y > ship.trosBottomY){
                 this.moveTo(this.x, ship.trosBottomY);
@@ -459,19 +467,19 @@ Diver.Diver = {
         }else{
             onStartUp.call(this);
         }
-        
+
         if (this.y > mark1.y){
             this.moveTo(mark1.x, mark1.y).wait(mark1.wait);
         }
-        
+
         if (this.y > mark2.y){
             this.moveTo(mark2.x, mark2.y).wait(mark2.wait);
         }
-        
+
         if (this.y > mark3.y){
             this.moveTo(mark3.x, mark3.y).wait(mark3.wait);
         }
-        
+
         this.moveTo(ship.trosBottomX, ship.trosTopY, function(){
             Diver.Game.getShip().load(this.stars);
             for (var i = 0; i < this.stars.length; i++){
@@ -480,6 +488,10 @@ Diver.Diver = {
             this.stars = [];
             this.resStopUse();
             this.resourceValue = this.resourceVolume;
+            if (this.killing){
+                this.destroy();
+                return;
+            }
             if (this.needLoadBalloon){
                 this.needLoadBalloon = false;
                 this.resStopUse();
@@ -497,7 +509,7 @@ Diver.Diver = {
         , mark2 = ship.getMark(2)
         , mark3 = ship.getMark(3)
         , resUseSpeed = this.resGetUseSpeed();
-        
+
         if (this.y > mark3.y){
             value += resUseSpeed * mark3.wait / 1000;
         }
@@ -508,17 +520,17 @@ Diver.Diver = {
             value += resUseSpeed * mark1.wait / 1000;
         }
 //        Diver.log(value);
-        
+
         value += (Math.abs(this.x - ship.trosBottomX) / this.speed) * resUseSpeed;
         value += ((this.y - ship.trosTopY) / this.speed) * resUseSpeed;
-        
+
 //        Diver.log(value);
-        
+
         if (this.action != 'gohome'){
             value += this.getCompensatorNeed();
         }
 //        Diver.log(this.resValue, value, this.getCompensatorNeed());
-        return value;
+        return value + 50;
     }
     , resGetUseSpeed: function(){
         var speed = this.resUseSpeed;
@@ -535,8 +547,65 @@ Diver.Diver = {
         return value;
     }
     , getZIndex: function(){
-        return this.id + 1;
+        return 'd' + this.id * 5;
+    }
+    , dropStars: function(){
+        var ship = Diver.Game.getShip();
+        if (this.y >= ship.trosBottomY){
+            var refresh = false;
+            var i = this.stars.length;
+            while(i--){
+                refresh = true;
+                var star = this.stars[i];
+                this.unMarkStar(star.id);
+                star.getZIndex = star.realZIndexFn;
+                star.fall();
+                this.stars.splice(i, 1);
+            }
+            if (refresh){
+                Diver.Game.refreshObjectsZIndex();
+            }
+        }
+    }
+    , destroy: function(){
+        this.resStopUse();
+        if (this.tip){
+            Diver.Game.removeDrawObject(this.tip);
+            delete this.tip;
+        }
+        Diver.Diver.superclass.destroy.apply(this, arguments);
+    }
+    , kill: function(){
+        this.killing = true;
+        this.stop(true);
+        Diver.Radio.un('message', this.receiveMessage, this);
+        this.dropStars();
+        this.goHome();
+    }
+    , getDrawData: function(){
+        if (this.killing){
+            var hidden = Math.round(new Date().getTime() / 500) % 2 == 0 ? true : false;
+//            Diver.log(hidden);
+            this.hidden = hidden;
+        }
+        return Diver.Diver.superclass.getDrawData.apply(this, arguments);
     }
 };
 
 Diver.Diver = Diver.extend(Diver.Component, Diver.Diver);
+
+Diver.Fish = {
+    src: 'fishes.png'
+    , init: function(){
+        Diver.Fish.superclass.init.apply(this, arguments);
+        this.startMove();
+    }
+    , startMove: function(){
+        var ship = Diver.Game.getShip();
+
+        this.y = Math.round(Math.random() * (ship.trosBottomY - ship.trosTopY) + ship.trosTopY);
+        this.x = Math.round(Math.random()) == 1 ? Diver.Game.getWidth() + 100 :  100;
+    }
+};
+
+Diver.Fish = Diver.extend(Diver.Component, Diver.Fish);
