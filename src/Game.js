@@ -4,6 +4,7 @@ Diver.Game = {
     , stars: null
     , excludeSearchStars: null
     , divers: null
+    , fishes: null
     , lastStarId: 0
     , lastDiverId: 0
     , bottomHeight: 38
@@ -11,7 +12,9 @@ Diver.Game = {
     , init: function(){
         this.stars = [];
         this.divers = [];
+        this.fishes = []
         this.excludeSearchStars = [];
+        Diver.Game.superclass.init.apply(this, arguments);
     }
     , start: function(){
         this.canvas = new Diver.Canvas({
@@ -30,6 +33,17 @@ Diver.Game = {
             , trosBottomY: 500
             , loadSrc: 'res/img/ship-load.png'
         });
+
+        var self = this;
+        setTimeout(function(){
+            var fish = new Diver.Fish({
+                src: 'res/img/fishes.png'
+                , id: -1
+            });
+            self.fishes.push(fish);
+            self.addDrawObject(fish);
+        }, Math.random() * 5000);
+
         this.canvas.play();
     }
     , addStarAt: function(x, y){
@@ -42,7 +56,7 @@ Diver.Game = {
             , height: 43
             , depth: depth
         });
-        
+
         this.stars.push(star);
         this.addDrawObject(star);
     }
@@ -60,11 +74,11 @@ Diver.Game = {
             , width: 66
             , height: 63
             , markedStars: this.divers.length > 0 ? this.divers[0].markedStars : []
-            , resVolume: 20000
-            , resValue: 20000
+            , resVolume: 4000
+            , resValue: 4000
             , tipSrc: 'res/img/thought.png'
         });
-        
+
         this.divers.push(diver);
         this.addDrawObject(diver);
         return diver;
@@ -107,7 +121,7 @@ Diver.Game = {
                 stars.push(star);
             }
         }
-        
+
         return stars;
     }
     , getWidth: function(){
@@ -118,6 +132,9 @@ Diver.Game = {
     }
     , refreshObjectsZIndex: function(){
         this.canvas.sortObjects();
+    }
+    , getDrawInterval: function(){
+        return this.canvas.interval;
     }
 };
 

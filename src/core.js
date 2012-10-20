@@ -135,7 +135,7 @@ Diver.mixins.Observable = {
         var params = Array.prototype.slice.call(arguments, 1);
         var subscriber;
         this.observers[event] = this.observers[event] || [];
-        
+
         for (var i = 0; i < this.observers[event].length; i++){
             subscriber = this.observers[event][i];
             subscribers.push(subscriber);
@@ -143,7 +143,7 @@ Diver.mixins.Observable = {
                 this.un(event, subscriber.func, subscriber.scope);
             }
         }
-        
+
         for (i = 0; i < subscribers.length; i++)  {
             subscriber = subscribers[i];
             subscriber.func.apply(subscriber.scope, params);
@@ -208,18 +208,38 @@ Diver.Canvas = {
             }
         }
     }
+    , drawObject: function(obj){
+        var data = obj.getDrawData();
+        if (data.hidden){
+            return;
+        }
+        if (obj.isTransform){
+            var transform = obj.getTransformData();
+            this.context.save();
+            this.context.translate(data.x + data.img.width/2, data.y + data.img.height/2);
+            this.context.globalAlpha = transform.alpha;
+            if (transform.mirrorH){
+                this.context.scale(-1, 1);
+            }
+            if (transform.mirrorV){
+                this.context.scale(1, -1);
+            }
+            var toRadians = Math.PI / 180;
+            this.context.rotate(toRadians * transform.angle);
+            this.context.drawImage(data.img, -data.img.width/2, -data.img.height/2);
+            this.context.restore();
+        }else{
+            this.context.drawImage(data.img, data.x, data.y);
+        }
+    }
     , drawFrame: function(){
         this.context.clearRect(0, 0, this.context.canvas.width, this.context.canvas.height);
         for (var i = 0; i < this.drawObjects.length; i++){
             var obj = this.drawObjects[i];
             if (obj.isDrawable){
-                var data = obj.getDrawData();
-                if (data.hidden){
-                    continue;
-                }
                 this.context.moveTo(0, 0);
-                this.context.drawImage(data.img, data.x, data.y);
-                
+                this.drawObject(obj);
+
                 if (Diver.debug){
                     this.context.lineWidth = 1;
                     this.context.beginPath();
@@ -232,7 +252,7 @@ Diver.Canvas = {
                     this.context.moveTo(obj.x, obj.y - 50);
                     this.context.lineTo(obj.x, obj.y + 50);
                     this.context.stroke();
-                    
+
                     this.context.lineWidth = 1;
                     this.context.beginPath();
                     this.context.moveTo(obj.x - obj.width / 2, obj.y - obj.height / 2);
@@ -256,21 +276,21 @@ Diver.Canvas = {
             this.context.moveTo(this.getWidth() / 6, 0);
             this.context.lineTo(this.getWidth() / 6, this.getHeight());
             this.context.stroke();
-            
+
             var ship = Diver.Game.getShip();
-            
+
             this.context.lineWidth = 1;
             this.context.beginPath();
             this.context.moveTo(ship.trosTopX - 50, ship.trosTopY);
             this.context.lineTo(ship.trosTopX + 50, ship.trosTopY);
             this.context.stroke();
-            
+
             this.context.lineWidth = 1;
             this.context.beginPath();
             this.context.moveTo(ship.trosBottomX - 50, ship.trosBottomY);
             this.context.lineTo(ship.trosBottomX + 50, ship.trosBottomY);
             this.context.stroke();
-            
+
             this.context.lineWidth = 1;
             this.context.beginPath();
             this.context.moveTo(ship.trosTopX, ship.trosTopY);
@@ -346,6 +366,25 @@ Diver.mixins.Drawable = {
     }
 };
 
+Diver.mixins.TransformImage = {
+    isTransform: true
+    , angle: 0
+    , mirrorH: false
+    , mirrorV: false
+    , scale: 1
+    , alpha: 1
+
+    , getTransformData: function(){
+        return {
+            angle: this.angle
+            , mirrorH: this.mirrorH
+            , mirrorV: this.mirrorV
+            , scale: this.scale
+            , alpha: this.alpha
+        };
+    }
+}
+
 Diver.mixins.Movable = {
     isMovable: true
     , speed: 0
@@ -415,13 +454,13 @@ Diver.mixins.Movable = {
                 this._setSideSrc('down');
             }
         }
-        
+
 //        Diver.log('start move from', from, 'to', to);
 
         this._moveIntervalId = setTimeout(function(){
             var now = (new Date().getTime()) - start,
                 progress = duration == 0 ? 1 : now / duration;
-            
+
             if (progress >= 1){
 //                Diver.log('stop move from', from, 'to', to);
                 self.setPos(to.x, to.y);
@@ -432,12 +471,12 @@ Diver.mixins.Movable = {
                 self._queueEnd();
                 return;
             }
-            
+
             var resultX = Math.round(lengthX * progress) + from.x,
                 resultY = Math.round(lengthY * progress) + from.y;
-                
+
 //                Diver.log(resultX, resultY);
-            
+
             self.setPos(resultX, resultY);
             if (self.isObservable){
                 self.fireEvent('move', self);
