@@ -74,8 +74,8 @@ Diver.Game = {
             , width: 66
             , height: 63
             , markedStars: this.divers.length > 0 ? this.divers[0].markedStars : []
-            , resVolume: 4000
-            , resValue: 4000
+            , resVolume: 20000
+            , resValue: 20000
             , tipSrc: 'res/img/thought.png'
         });
 

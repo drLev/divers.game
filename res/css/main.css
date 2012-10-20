@@ -14,13 +14,20 @@ body {
 .control-panel {
     height: 65px;
     position: relative;
-    width: 100%;    
+    width: 100%;
 }
 .control-panel__label {
     font-size: 22px;
     left: 30px;
     position: absolute;
     top: 20px;
+
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 .control-panel__button {
     width: 163px;
@@ -45,4 +52,11 @@ div#add-diver:hover {
 }
 #canvas{
     margin: 0px 21px 0px 21px;
+
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }

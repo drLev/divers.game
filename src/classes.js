@@ -632,13 +632,15 @@ Diver.Fish = {
             , y: Math.round(Math.random() * (ship.trosBottomY - ship.trosTopY - this.height) + ship.trosTopY + this.height)
         };
 
-        this.speed += Math.random() * 40 - 20;
+        this.speed = 60 + Math.random() * 80 - 40;
 
         this.x = from.x;
         this.y = from.y;
 
         if (this.x < to.x){
             this.mirrorH = true;
+        }else{
+            this.mirrorH = false;
         }
 
         var a = from.y - to.y
