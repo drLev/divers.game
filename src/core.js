@@ -1,72 +1,120 @@
-Diver = {};
-
-Diver.apply = function(a, b, onlyNew){
-    if (a && b && typeof b == 'object'){
-        for (var p in b){
-            if (!onlyNew || a[p] == undefined){
-                a[p] = b[p];
+Diver = {
+    apply: function(a, b, onlyNew){
+        if (a && b && typeof b == 'object'){
+            for (var p in b){
+                if (!onlyNew || a[p] == undefined){
+                    a[p] = b[p];
+                }
             }
         }
+        return a;
     }
-    return a;
-};
-
-(function(){
-    Diver.apply(Diver, {
-        extend: function(){
-            var io = function(o){
-                for (var m in o){
-                    this[m] = o[m];
-                }
+    , extend: function(){
+        var io = function(o){
+            for (var m in o){
+                this[m] = o[m];
             }
-            return function(sp, overrides){
-                var sb = function(){sp.apply(this, arguments);};
-                var F = function(){}, sbp, spp = sp.prototype;
-                F.prototype = spp;
-                sbp = sb.prototype = new F();
-                sbp.constructor=sb;
-                sb.superclass=spp;
-                if(spp.constructor == Object.prototype.constructor){
-                    spp.constructor=sp;
-                }
-                sb.override = function(o){
-                    Diver.override(sb, o);
-                };
-                sbp.override = io;
-                if (overrides.mixins){
-                    for(var i = 0; i < overrides.mixins.length; i++){
-                        var mixin = overrides.mixins[i];
-                        if (typeof mixin == 'object'){
-                            Diver.override(sb, mixin);
-                        }
+        }
+        return function(sp, overrides){
+            overrides.$class = sp;
+            var sb = function(){sp.apply(this, arguments);};
+            var F = function(){}, sbp, spp = sp.prototype;
+            F.prototype = spp;
+            sbp = sb.prototype = new F();
+            sbp.constructor=sb;
+            sb.$parent = spp;
+            if(spp.constructor == Object.prototype.constructor){
+                spp.constructor=sp;
+            }
+            sb.override = function(o){
+                Diver.override(sb, o);
+            };
+            sbp.override = io;
+            if (overrides.mixins){
+                for(var i = 0; i < overrides.mixins.length; i++){
+                    var mixin = overrides.mixins[i];
+                    if (Diver.isObject(mixin)){
+                        Diver.override(sb, mixin);
                     }
                 }
-                Diver.override(sb, overrides);
-                return sb;
-            };
-        }()
-        , override : function(origclass, overrides){
-            if(overrides){
-                var p = origclass.prototype;
-                for(var method in overrides){
-                    if (method == 'mixins'){
-                        if (p[method]){
-                            p[method] = p[method].concat(overrides[method]);
-                        }else{
-                            p[method] = overrides[method];
-                        }
+            }
+            Diver.override(sb, overrides);
+            return sb;
+        };
+    }()
+    , override : function(origclass, overrides){
+        if(overrides){
+            var p = origclass.prototype;
+            for(var method in overrides){
+                if (method == 'mixins'){
+                    if (p[method]){
+                        p[method] = p[method].concat(overrides[method]);
                     }else{
                         p[method] = overrides[method];
                     }
+                }else{
+                    p[method] = overrides[method];
                 }
             }
         }
-    });
-})();
-
-Diver.log = function(){
-    console.log.apply(console, arguments);
-}
+    }
+    , arrayRemove: function(array, item){
+        var i = array.length;
+        while(i--){
+            if (array[i] == item){
+                Diver.arrayRemoveAt(array, i);
+            }
+        }
+    }
+    , arrayRemoveBy: function(array, propName, propValue){
+        var i = array.length;
+        while (i--){
+            if (Diver.isString(propName)) {
+                if (array[i][propName] == propValue){
+                    Diver.arrayRemoveAt(array, i);
+                }
+            }else if (Diver.isFunction(propName)) {
+                if (propName.call(propValue || window, array[i])){
+                    Diver.arrayRemoveAt(array, i);
+                }
+            }else if (Diver.isObject(propName)) {
+                var flag = true;
+                for (var n in propName){
+                    if (array[i][n] != propName[n]) {
+                        flag = false;
+                    }
+                }
+                if (flag){
+                    Diver.arrayRemoveAt(array, i);
+                }
+            }
+        }
+    }
+    , arrayRemoveAt: function(array, i){
+        array.splice(i, 1);
+    }
+    , isFunction: function(f){
+        return toString.call(f) == '[object Function]' || typeof f == 'function';
+    }
+    , isObject: function(o){
+        return toString.call(o) == '[object Object]' && typeof o == 'object';
+    }
+    , isArray: function(a){
+        return toString.call(a) == '[object Array]';
+    }
+    , isNull: function(v){
+        return typeof v == 'undefined' || toString.call(v) == '[object Null]';
+    }
+    , isNumber: function(n){
+        return typeof n == 'number';
+    }
+    , isString: function(s){
+        return typeof s == 'string';
+    }
+    , getInt: function(a, def){
+        return parseInt(a) || def || 0;
+    }
+};
 
 Diver.Base = function(config){
     if (config && config.mixins){
@@ -75,11 +123,12 @@ Diver.Base = function(config){
         }
     }
     Diver.apply(this, config);
-    this.init();
+    this.init(config);
 };
 
 Diver.Base.prototype = {
     name: 'base'
+    , $class: Object
     , id: 0
     , el: null
     , mixins: []
@@ -89,6 +138,31 @@ Diver.Base.prototype = {
             if (mixin.initMixin){
                 mixin.initMixin.apply(this, arguments)
             }
+        }
+    }
+    , callParent: function(){
+        var methodName;
+        for (var n in this){
+            if (this[n] == this.callParent.caller){
+                methodName = n;
+                break;
+            }
+        }
+
+        if (Diver.isString(methodName)){
+            var args = this.callParent.caller.arguments;
+            if (this.$class.$parent && this.$class.$parent[methodName]){
+                return this.$class.$parent[methodName].apply(this, args);
+            }else if(this.$class.prototype && this.$class.prototype[methodName]){
+                return this.$class.prototype[methodName].apply(this, args);
+            }else if(Diver.isArray(this.mixins)){
+                for (var i = 0; i < this.mixins.length; i++){
+                    if (Diver.isFunction(this.mixins[i][methodName])){
+                        return this.mixins[i][methodName].apply(this, args);
+                    }
+                }
+            }
+            console.warn('method ' + methodName + ' not found in', this);
         }
     }
 };
@@ -108,7 +182,7 @@ Diver.mixins.Observable = {
             , single: single === true
         };
 
-        if (this.observers[event]) {
+        if (Diver.isArray(this.observers[event])) {
             this.observers[event].push(params);
         } else {
             this.observers[event] = [params];
@@ -117,17 +191,11 @@ Diver.mixins.Observable = {
     }
     , un: function(event, func, scope){
         scope = scope || window;
-        if (this.observers[event]) {
-            var i = this.observers[event].length;
-            var o;
-            while(i--){
-                o = this.observers[event][i];
-                if(o){
-                    if(o.func == func && o.scope == scope){
-                        this.observers[event].splice(i, 1);
-                    }
-                }
-            }
+        if (Diver.isArray(this.observers[event])) {
+            Diver.arrayRemoveBy(this.observers[event], {
+                func: func
+                , scope: scope
+            });
         }
     }
     , fireEvent: function(event){
@@ -160,7 +228,7 @@ Diver.Canvas = {
     , width: 0
     , height: 0
     , init: function(){
-        Diver.Canvas.superclass.init.apply(this, arguments);
+        this.callParent();
         this.drawObjects = [];
         var self = this;
         this.el = document.getElementById(this.id);
@@ -173,7 +241,7 @@ Diver.Canvas = {
             }else{
                 x = e.layerX - e.target.offsetLeft;
                 y = e.layerY - e.target.offsetTop;
-              }
+            }
             self.onCanvasClick(x, y, e);
         });
         this.context = this.el.getContext("2d");
@@ -201,19 +269,22 @@ Diver.Canvas = {
         });
     }
     , remove: function(obj){
-        var i = this.drawObjects.length;
-        while (i--){
-            if (this.drawObjects[i] == obj){
-                this.drawObjects.splice(i, 1);
-            }
-        }
+        Diver.arrayRemove(this.drawObjects, obj);
     }
     , drawObject: function(obj){
-        var data = obj.getDrawData();
-        if (data.hidden){
-            return;
+        var data;
+        if (obj.isComposite){
+            obj.eachItems(function(item){
+                if (item.getZIndex() < 0){
+                    this.drawObject(item);
+                }
+            }, this);
         }
-        if (obj.isTransform){
+        if (obj.isDrawable && obj.isTransform){
+            data = obj.getDrawData();
+            if (data.hidden){
+                return;
+            }
             var transform = obj.getTransformData();
             this.context.save();
             this.context.translate(data.x + data.img.width/2, data.y + data.img.height/2);
@@ -228,8 +299,38 @@ Diver.Canvas = {
             this.context.rotate(toRadians * transform.angle);
             this.context.drawImage(data.img, -data.img.width/2, -data.img.height/2);
             this.context.restore();
-        }else{
+        }else if(obj.isDrawable){
+            data = obj.getDrawData();
+            if (data.hidden){
+                return;
+            }
             this.context.drawImage(data.img, data.x, data.y);
+        }else if(obj.isDrawableText){
+            data = obj.getTextData();
+            if (data.hidden){
+                return;
+            }
+            var fontSize = data.fontSize;
+
+            fontSize += (typeof data.fontize == 'number')? 'px' : '';
+
+            this.context.fillStyle = data.color;
+            this.context.font = data.fontSize + data.fontFamily;
+            this.context.textAlign = data.align;
+
+            if (data.wrap){
+                this._wrapText(data.text, data.x, data.y, data.maxWidth, data.lineHeight, data.wordSeparator);
+            }else{
+                this.context.fillText(data.text, data.x, data.y);
+            }
+
+        }
+        if (obj.isComposite){
+            obj.eachItems(function(item){
+                if (item.getZIndex() >= 0){
+                    this.drawObject(item);
+                }
+            }, this);
         }
     }
     , drawFrame: function(){
@@ -239,64 +340,13 @@ Diver.Canvas = {
             if (obj.isDrawable){
                 this.context.moveTo(0, 0);
                 this.drawObject(obj);
-
-                if (Diver.debug){
-                    this.context.lineWidth = 1;
-                    this.context.beginPath();
-                    this.context.moveTo(obj.x - 50, obj.y);
-                    this.context.lineTo(obj.x + 50, obj.y);
-                    this.context.stroke();
-
-                    this.context.lineWidth = 1;
-                    this.context.beginPath();
-                    this.context.moveTo(obj.x, obj.y - 50);
-                    this.context.lineTo(obj.x, obj.y + 50);
-                    this.context.stroke();
-
-                    this.context.lineWidth = 1;
-                    this.context.beginPath();
-                    this.context.moveTo(obj.x - obj.width / 2, obj.y - obj.height / 2);
-                    this.context.lineTo(obj.x + obj.width / 2, obj.y - obj.height / 2);
-                    this.context.lineTo(obj.x + obj.width / 2, obj.y + obj.height / 2);
-                    this.context.lineTo(obj.x - obj.width / 2, obj.y + obj.height / 2);
-                    this.context.closePath();
-                    this.context.stroke();
-                }
             }
         }
-        if (Diver.debug){
-            this.context.lineWidth = 1;
-            this.context.beginPath();
-            this.context.moveTo((this.getWidth() / 6) * 5, 0);
-            this.context.lineTo((this.getWidth() / 6) * 5, this.getHeight());
-            this.context.stroke();
-
-            this.context.lineWidth = 1;
-            this.context.beginPath();
-            this.context.moveTo(this.getWidth() / 6, 0);
-            this.context.lineTo(this.getWidth() / 6, this.getHeight());
-            this.context.stroke();
-
-            var ship = Diver.Game.getShip();
-
-            this.context.lineWidth = 1;
-            this.context.beginPath();
-            this.context.moveTo(ship.trosTopX - 50, ship.trosTopY);
-            this.context.lineTo(ship.trosTopX + 50, ship.trosTopY);
-            this.context.stroke();
-
-            this.context.lineWidth = 1;
-            this.context.beginPath();
-            this.context.moveTo(ship.trosBottomX - 50, ship.trosBottomY);
-            this.context.lineTo(ship.trosBottomX + 50, ship.trosBottomY);
-            this.context.stroke();
-
-            this.context.lineWidth = 1;
-            this.context.beginPath();
-            this.context.moveTo(ship.trosTopX, ship.trosTopY);
-            this.context.lineTo(ship.trosBottomX, ship.trosBottomY);
-            this.context.stroke();
-        }
+        // #44b0df
+        this.context.fillStyle = '#44b0df';
+        this.context.font = '11px Tahoma';
+        this.context.textAlign = 'center';
+//        this.context.fillText('Надо отдохнуть', 50, 50);
     }
     , play: function(){
         if (!this.intervalId){
@@ -308,6 +358,25 @@ Diver.Canvas = {
         if (this.inervalId){
             clearInterval(this.intervalId);
         }
+    }
+    , _wrapText: function (text, x, y, maxWidth, lineHeight, wordSeparator) {
+        wordSeparator = wordSeparator == undefined ? ' ' : wordSeparator;
+        var words = text.split(wordSeparator);
+        var line = "";
+
+        for(var n = 0; n < words.length; n++){
+            var testLine = line + words[n] + wordSeparator;
+            var metrics = this.context.measureText(testLine);
+            var testWidth = metrics.width;
+            if(testWidth > maxWidth) {
+                this.context.fillText(line, x, y);
+                line = words[n] + wordSeparator;
+                y += lineHeight;
+            } else {
+                line = testLine;
+            }
+        }
+        this.context.fillText(line, x, y);
     }
 };
 
@@ -322,6 +391,7 @@ Diver.mixins.Drawable = {
     , el: null
     , isDrawable: true
     , hidden: false
+    , zIndex: 0
     , initMixin: function(){
         var self = this;
         this.el = new Image();
@@ -340,6 +410,35 @@ Diver.mixins.Drawable = {
     }
     , getY: function(){
         return this.y;
+    }
+    , setPos: function(a, b, c, d){
+        var x, y, offsetX, offsetY;
+        if (Diver.isObject(a)){
+            x = Diver.getInt(a.x, this.x);
+            y = Diver.getInt(a.y, this.y);
+            if (Diver.isObject(b)){
+                offsetX = Diver.getInt(b.x);
+                offsetY = Diver.getInt(b.y);
+            }else{
+                offsetX = Diver.getInt(b);
+                offsetY = Diver.getInt(c);
+            }
+        }else{
+            x = Diver.getInt(a, this.x);
+            y = Diver.getInt(b, this.y);
+            offsetX = Diver.getInt(c);
+            offsetY = Diver.getInt(d);
+        }
+
+        this.x = x + (offsetX || 0);
+        this.y = y + (offsetY || 0);
+        return this;
+    }
+    , getPos: function(){
+        return {
+            x: this.x
+            , y: this.y
+        };
     }
     , getCenter: function(){
         return {
@@ -362,7 +461,13 @@ Diver.mixins.Drawable = {
         };
     }
     , getZIndex: function(){
-        return 0;
+        return this.zIndex;
+    }
+    , show: function(){
+        this.hidden = false;
+    }
+    , hide: function(){
+        this.hidden = true;
     }
 };
 
@@ -400,7 +505,7 @@ Diver.mixins.Movable = {
 
     , _moveIntervalId: undefined
     , _queueArr: undefined
-    , _currentAcrion: undefined
+    , _currentAction: undefined
 
     , initMixin: function(){
         this.srcUp = this.srcUp || this.src;
@@ -429,8 +534,8 @@ Diver.mixins.Movable = {
     , _moveTo: function(x, y){
         this._stop();
         this.moving = true;
-        x = (typeof x != 'number') ? this.x : x;
-        y = (typeof y != 'number') ? this.y : y;
+        x = Diver.getInt(x, this.x);
+        y = Diver.getInt(y, this.y);
 
         var self = this
         , start = new Date().getTime()
@@ -507,8 +612,8 @@ Diver.mixins.Movable = {
     }
     , _queueEnd: function(stopCallback){
 //        Diver.log('queue end with stopCallback =', stopCallback);
-        var a = this._currentAcrion;
-        this._currentAcrion = undefined;
+        var a = this._currentAction;
+        this._currentAction = undefined;
         if (a && a.callback && stopCallback !== true){
             switch (a.type){
                 case 'move': a.callback.call(a.scope || window, this); break;
@@ -519,10 +624,10 @@ Diver.mixins.Movable = {
         this._queueRun();
     }
     , _queueRun: function(){
-        if (!this._currentAcrion && this._queueArr.length){
+        if (!this._currentAction && this._queueArr.length){
             var a = this._queueArr.shift();
             if (a){
-                this._currentAcrion = a;
+                this._currentAction = a;
                 switch(a.type){
                     case 'move': this._move(a.side, a.length); break;
                     case 'moveto': this._moveTo(a.x, a.y); break;
@@ -533,7 +638,7 @@ Diver.mixins.Movable = {
     }
     , _queueAdd: function(action){
         this._queueArr.push(action);
-        if (!this._currentAcrion){
+        if (!this._currentAction){
             this._queueRun();
         }
     }
@@ -541,18 +646,9 @@ Diver.mixins.Movable = {
         this._queueArr = [];
         this._queueEnd(stopCallback);
     }
-    , setPos: function(x, y){
-        this.x = x;
-        this.y = y;
-        return this;
-    }
-    , getPos: function(){
-        return {
-            x: this.x
-            , y: this.y
-        };
-    }
     , moveTo: function(x, y, callback, scope){
+        x = Diver.getInt(x, this.x);
+        y = Diver.getInt(y, this.y);
         this._queueAdd({
             type: 'moveto'
             , x: x
@@ -563,6 +659,7 @@ Diver.mixins.Movable = {
         return this;
     }
     , move: function(side, length, callback, scope){
+        length = Diver.getInt(length);
         this._queueAdd({
             type: 'move'
             , side: side
@@ -573,6 +670,7 @@ Diver.mixins.Movable = {
         return this;
     }
     , wait: function(time, callback, scope){
+        time = Diver.getInt(time);
         this._queueAdd({
             type: 'wait'
             , time: time
@@ -590,7 +688,7 @@ Diver.mixins.Movable = {
 Diver.Component = {
     mixins: [Diver.mixins.Movable, Diver.mixins.Drawable]
     , init: function(){
-        Diver.Component.superclass.init.apply(this, arguments);
+        this.callParent();
     }
     , destroy: function(){
         this.stop();
@@ -615,7 +713,6 @@ Diver.mixins.Resource = {
     , resStartUse: function(){
         this.resStopUse();
         var self = this;
-//        Diver.log(this.resValue);
         this._resIntervalId = setInterval(function(){
             self.resUse();
         }, this.resInterval);
@@ -626,7 +723,6 @@ Diver.mixins.Resource = {
     , resUse: function(){
         this.resValue -= this.resGetUseSpeed() * this.resInterval / 1000;
         this.resCheckDangerLevel();
-//        Diver.log(this.resValue);
     }
     , resGetUseSpeed: function(){
         return this.resUseSpeed;
@@ -651,5 +747,66 @@ Diver.mixins.Resource = {
     }
     , resSetFull: function(){
         this.resValue = this.resVolume;
+    }
+}
+
+Diver.mixins.DrawableText = {
+    isDrawableText: true
+    , textColor: ''
+    , fontSize: '12px'
+    , fontFamily: 'Tahoma'
+    , text: ''
+    , textAlign: 'left'
+    , x: 0
+    , y: 0
+    , maxWidth: 0
+    , lineHeight: 0
+    , wrapText: false
+    , wordSeparator: ' '
+    , hidden: false
+    , zIndex: 0
+    , getTextData: function(){
+        return {
+            color: this.textColor
+            , fontSize: this.fontSize
+            , fontFamily: this.fontFamily
+            , text: this.text
+            , x: this.x
+            , y: this.y
+            , maxWidth: this.maxWidth
+            , lineHeight: this.lineHeight
+            , align: this.textAlign
+            , wrap: this.wrapText
+            , wordSeparator: this.wordSeparator
+            , hidden: this.hidden
+        }
+    }
+    , getZIndex: function(){
+        return this.zIndex;
+    }
+    , setPos: function(){
+        Diver.mixins.Drawable.setPos.apply(this, arguments);
+    }
+    , getPos: function(){
+        return Diver.mixins.Drawable.getPos.apply(this, arguments);
+    }
+}
+
+Diver.mixins.Composite = {
+    items: null
+    , isComposite: true
+    , initMixin: function(){
+        this.items = [];
+    }
+    , eachItems: function(func, scope){
+        for (var i = 0; i < this.items.length; i++){
+            func.call(scope || window, this.items[i], i, this);
+        }
+    }
+    , addItem: function(item){
+        this.items.push(item);
+    }
+    , removeItem: function(item){
+        Diver.arrayRemove(this.items, item);
     }
 }

@@ -19,7 +19,7 @@ window.onload = function(){
         , 'delete-diver.png'
         , 'fishes.png'
         , 'ship-load.png'
-        , 'thought.png'
+        , 'thought-empty.png'
         , 'Diver-go-harvest.png'
         , 'Diver-go-home.png'
         , 'Diver-tros.png'

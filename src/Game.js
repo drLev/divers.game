@@ -14,7 +14,7 @@ Diver.Game = {
         this.divers = [];
         this.fishes = []
         this.excludeSearchStars = [];
-        Diver.Game.superclass.init.apply(this, arguments);
+        this.callParent();
     }
     , start: function(){
         this.canvas = new Diver.Canvas({
@@ -47,36 +47,41 @@ Diver.Game = {
         this.canvas.play();
     }
     , addStarAt: function(x, y){
-        var depth = this.canvas.getHeight() - this.bottomHeight + Math.round(Math.random() * this.bottomHeight) - 25;
+        var screenHeight = this.getHeight()
+        , screenWidth = this.getWidth();
+        if (y < screenHeight / 6){
+            return;
+        }
+        var depth = screenHeight - this.bottomHeight + Math.round(Math.random() * this.bottomHeight) - 25;
         var star = new Diver.Star({
             id: ++this.lastStarId
-            , x: x
-            , y: y
+            , x: Math.max(Math.min(x, screenWidth - 23), 23)
+            , y: Math.max(y, (screenHeight / 6) + 21)
             , width: 46
             , height: 43
             , depth: depth
+            , maxDepth: screenHeight - 25
+            , minDepth: screenHeight - this.bottomHeight - 25
+            , screenWidth: screenWidth
         });
 
         this.stars.push(star);
         this.addDrawObject(star);
     }
     , removeStar: function(star){
-        var index = this.stars.indexOf(star);
-        if (index >= 0){
-            this.stars.splice(index, 1);
-        }
+        Diver.arrayRemove(this.stars, star);
         this.removeDrawObject(star);
     }
     , addDiver: function(){
         var diver = new Diver.Diver({
             id: ++this.lastDiverId
-            , speed: 20
+            , speed: 100
             , width: 66
             , height: 63
             , markedStars: this.divers.length > 0 ? this.divers[0].markedStars : []
-            , resVolume: 20000
-            , resValue: 20000
-            , tipSrc: 'res/img/thought.png'
+            , resVolume: 1000
+            , resValue: 1000
+            , tipSrc: 'res/img/thought-empty.png'
         });
 
         this.divers.push(diver);
@@ -113,7 +118,6 @@ Diver.Game = {
     }
     , getNearestStars: function(x, duration){
         var stars = [];
-//        Diver.log(x, duration);
 
         for (var i = 0; i < this.stars.length; i++){
             var star = this.stars[i];
