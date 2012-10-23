@@ -342,11 +342,6 @@ Diver.Canvas = {
                 this.drawObject(obj);
             }
         }
-        // #44b0df
-        this.context.fillStyle = '#44b0df';
-        this.context.font = '11px Tahoma';
-        this.context.textAlign = 'center';
-//        this.context.fillText('Надо отдохнуть', 50, 50);
     }
     , play: function(){
         if (!this.intervalId){

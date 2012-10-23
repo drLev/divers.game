@@ -54,17 +54,17 @@ Diver.Ship = {
             case 1:
                 pos.x = this.trosTopX;
                 pos.y = (height / 3) * 2 + this.trosTopY;
-                pos.wait = 500;
+                pos.wait = 5000;
                 break;
             case 2:
                 pos.x = this.trosTopX;
                 pos.y = (height / 3) + this.trosTopY;
-                pos.wait = 1000;
+                pos.wait = 10000;
                 break;
             case 3:
                 pos.x = this.trosTopX;
                 pos.y = (height / 5) + this.trosTopY
-                pos.wait = 1500;
+                pos.wait = 15000;
                 break;
         }
         return pos;
@@ -170,26 +170,34 @@ Diver.DiverTip = {
     , mixins: [Diver.mixins.Drawable, Diver.mixins.Composite]
     , text: ''
     , textItem: null
+    , hideInterval: null
     , init: function(){
         this.callParent();
         this.textItem = new Diver.Base({
             mixins: [Diver.mixins.DrawableText]
-            , text: ''
-            , fontSize: 12
+            , text: this.text
+            , fontSize: '12pt'
             , textColor: '#44b0df'
-            , x: this.x
-            , y: this.y
+            , textAlign: 'center'
+            , wrapText: true
+            , maxWidth: 50
+            , lineHeight: 12
         });
         this.addItem(this.textItem);
     }
-    , show: function(text){
+    , show: function(text, showTime){
+        clearTimeout(this.hideInterval);
         this.text = text;
         this.textItem.text = this.text;
         this.callParent();
+        var self = this;
+        this.hideInterval = setTimeout(function(){
+            self.hide();
+        }, showTime);
     }
     , setPos: function(){
         this.callParent();
-        this.textItem.setPos(this.getPos());
+        this.textItem.setPos(this.getPos(), {x:-15, y:-10});
     }
 };
 
@@ -277,7 +285,8 @@ Diver.Diver = {
         }
         this.needLoadBalloon = true;
         this.stop(true);
-        this.showTip('Надо отдохнуть');
+        this.showTip('Воздух заканчивается');
+        console.log('show tip');
         this.goHome();
     }
     , stop: function(stopCallback){
@@ -290,16 +299,16 @@ Diver.Diver = {
         if (!this.tip){
             this.tip = new Diver.DiverTip({
                 src: this.tipSrc
-                , hidden: false
+                , hidden: true
                 , text: msg
                 , getZIndex: function(){
                     return 1;
                 }
             });
             this.addItem(this.tip);
-        }else{
-            this.tip.show(msg);
         }
+
+        this.tip.show(msg, 2000);
         this.tip.setPos(this.getTipPos());
     }
     , hideTip: function(){
@@ -372,6 +381,7 @@ Diver.Diver = {
     }
     , markStar: function(starId, silent){
         if (silent !== true){
+            this.showTip('Вижу звезду #' + starId);
             Diver.Radio.sendMessage({
                 type: 'markStar'
                 , sender: this
@@ -510,15 +520,21 @@ Diver.Diver = {
         }
 
         if (this.y > mark1.y){
-            this.moveTo(mark1.x, mark1.y).wait(mark1.wait);
+            this.moveTo(mark1.x, mark1.y, function(){
+                this.showTip('Надо отдохнуть');
+            }, this).wait(mark1.wait);
         }
 
         if (this.y > mark2.y){
-            this.moveTo(mark2.x, mark2.y).wait(mark2.wait);
+            this.moveTo(mark2.x, mark2.y, function(){
+                this.showTip('Надо отдохнуть');
+            }, this).wait(mark2.wait);
         }
 
         if (this.y > mark3.y){
-            this.moveTo(mark3.x, mark3.y).wait(mark3.wait);
+            this.moveTo(mark3.x, mark3.y, function(){
+                this.showTip('Надо отдохнуть');
+            }, this).wait(mark3.wait);
         }
 
         this.moveTo(ship.trosBottomX, ship.trosTopY, function(){
@@ -537,7 +553,7 @@ Diver.Diver = {
                 this.needLoadBalloon = false;
                 this.action = 'loadingballon';
                 this.resStopUse();
-                this.hideTip();
+//                this.hideTip();
                 ship.loadBalloon(this, this.goHarvest, this);
             }else{
                 this.goHarvest();

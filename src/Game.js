@@ -75,12 +75,12 @@ Diver.Game = {
     , addDiver: function(){
         var diver = new Diver.Diver({
             id: ++this.lastDiverId
-            , speed: 100
+            , speed: 20
             , width: 66
             , height: 63
             , markedStars: this.divers.length > 0 ? this.divers[0].markedStars : []
-            , resVolume: 1000
-            , resValue: 1000
+            , resVolume: 20000
+            , resValue: 20000
             , tipSrc: 'res/img/thought-empty.png'
         });
 
