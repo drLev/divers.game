@@ -1,3 +1,6 @@
+/**
+ * Основной контроллер, синглтон
+ */
 Diver.Game = {
     canvas: null
     , canvasId: 'canvas'

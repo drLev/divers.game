@@ -176,7 +176,7 @@ Diver.DiverTip = {
         this.textItem = new Diver.Base({
             mixins: [Diver.mixins.DrawableText]
             , text: this.text
-            , fontSize: '12pt'
+            , fontSize: '12px'
             , textColor: '#44b0df'
             , textAlign: 'center'
             , wrapText: true
@@ -243,8 +243,11 @@ Diver.Diver = {
         this.goHarvest();
     }
     , _setSideSrc: function(side){
-        this.srcDirection = this.srcDirection || side;
-        this.callParent();
+        if (this.action == 'gettingstar'){
+            return;
+        }else{
+            return this.callParent();
+        }
     }
     , receiveMessage: function(msg){
         msg = msg || {};
@@ -286,7 +289,6 @@ Diver.Diver = {
         this.needLoadBalloon = true;
         this.stop(true);
         this.showTip('Воздух заканчивается');
-        console.log('show tip');
         this.goHome();
     }
     , stop: function(stopCallback){

@@ -94,16 +94,16 @@ Diver = {
         array.splice(i, 1);
     }
     , isFunction: function(f){
-        return toString.call(f) == '[object Function]' || typeof f == 'function';
+        return Object.prototype.toString.call(f) == '[object Function]' || typeof f == 'function';
     }
     , isObject: function(o){
-        return toString.call(o) == '[object Object]' && typeof o == 'object';
+        return Object.prototype.toString.call(o) == '[object Object]' && typeof o == 'object';
     }
     , isArray: function(a){
-        return toString.call(a) == '[object Array]';
+        return Object.prototype.toString.call(a) == '[object Array]';
     }
     , isNull: function(v){
-        return typeof v == 'undefined' || toString.call(v) == '[object Null]';
+        return typeof v == 'undefined' || Object.prototype.toString.call(v) == '[object Null]';
     }
     , isNumber: function(n){
         return typeof n == 'number';
@@ -555,14 +555,11 @@ Diver.mixins.Movable = {
             }
         }
 
-//        Diver.log('start move from', from, 'to', to);
-
         this._moveIntervalId = setTimeout(function(){
             var now = (new Date().getTime()) - start,
                 progress = duration == 0 ? 1 : now / duration;
 
             if (progress >= 1){
-//                Diver.log('stop move from', from, 'to', to);
                 self.setPos(to.x, to.y);
                 self.moving = false;
                 if (self.isObservable){
@@ -575,8 +572,6 @@ Diver.mixins.Movable = {
             var resultX = Math.round(lengthX * progress) + from.x,
                 resultY = Math.round(lengthY * progress) + from.y;
 
-//                Diver.log(resultX, resultY);
-
             self.setPos(resultX, resultY);
             if (self.isObservable){
                 self.fireEvent('move', self);
@@ -585,7 +580,6 @@ Diver.mixins.Movable = {
         }, this.interval);
     }
     , _setSideSrc: function(side){
-//        Diver.log(side);
         this.direction = side;
         switch(side){
             case 'up': this.setSrc(this.srcUp); break;
@@ -595,7 +589,6 @@ Diver.mixins.Movable = {
         }
     }
     , _stop: function(){
-//        Diver.log('stopped moving');
         clearTimeout(this._moveIntervalId);
     }
     , _wait: function(time){
@@ -606,7 +599,6 @@ Diver.mixins.Movable = {
         }, time);
     }
     , _queueEnd: function(stopCallback){
-//        Diver.log('queue end with stopCallback =', stopCallback);
         var a = this._currentAction;
         this._currentAction = undefined;
         if (a && a.callback && stopCallback !== true){
